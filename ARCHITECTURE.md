@@ -80,5 +80,10 @@ backend. Hiding a button is never the protection.
 7. **Duplicate projects** flagged at submit via normalized title/repo; later submission points
    `duplicateOfId` at the earlier one and is excluded from ranking.
 8. **CSV formula guard** — cells starting with `= + - @` are prefixed with `'` in `lib/csv.ts`.
-9. **Tests use `TEST_DATABASE_URL`** and `clock.setNow` so deadline behaviour is deterministic.
-10. **Stack freeze** — no extra UI kits, auth libraries, Redis, or WebSockets (per project rules).
+9. **Authenticated Community Voting** — one vote per user per track. We enforce unique constraints (`eventId_voterId_trackId`).
+10. **Deterministic Per-Voter Shuffle** — `ballot.ts` shuffles the ballot using a Fisher-Yates algorithm seeded with `sha256(voterId + ":" + eventId)`, ensuring uniform distribution while maintaining stability on refresh for each user.
+11. **Voting Results Hidden** — tally logic returns `403 results_hidden` to everyone (even organizers) while voting is open, preventing leaking or collusion. Organizers can only see aggregate turnout until voting closes.
+12. **Comment Soft Deletes** — project comments are soft-deleted via `hiddenAt` so the moderation audit trail is never truly destroyed.
+13. **Hashed IPs** — IP addresses are hashed using SHA-256 and salt for rate limiting and moderation tracing, never stored in plain text.
+14. **Tests use `TEST_DATABASE_URL`** and `clock.setNow` so deadline behaviour is deterministic.
+15. **Stack freeze** — no extra UI kits, auth libraries, Redis, or WebSockets (per project rules).

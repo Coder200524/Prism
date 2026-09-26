@@ -686,6 +686,72 @@ describe("api/permission-matrix", () => {
         admin: 404,
       },
     },
+    {
+      name: "GET /api/events/:eventId/community-results (during voting)",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/community-results`,
+      expected: {
+        anonymous: 403,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 403,
+        admin: 403,
+      },
+    },
+    {
+      name: "GET /api/events/:eventId/community-turnout",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/community-turnout`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "GET /api/events/:eventId/votes/flagged",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/votes/flagged`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "POST /api/votes/:voteId/void",
+      method: "post",
+      path: (s) => `/api/votes/${s.voteId}/void`,
+      body: () => ({ reason: "spam" }),
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "POST /api/votes/:voteId/restore",
+      method: "post",
+      path: (s) => `/api/votes/${s.voteId}/restore`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
   ];
 
   for (const matrixCase of cases) {

@@ -24,6 +24,8 @@ export const createEventBodySchema = z.object({
   submissionsOpen: isoDateTime,
   submissionsClose: isoDateTime,
   judgingClose: isoDateTime.nullable().optional(),
+  votingOpen: isoDateTime.nullable().optional(),
+  votingClose: isoDateTime.nullable().optional(),
   maxTeamSize: z.number().int().min(1).max(50).optional().default(4),
   reviewsPerProject: z.number().int().min(1).max(20).optional().default(3),
   tracks: z.array(trackInputSchema).default([]),

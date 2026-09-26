@@ -4,6 +4,7 @@ import { RequireRole } from "../../auth/RequireRole";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { AssignmentsTab } from "./tabs/AssignmentsTab";
 import { AuditTab } from "./tabs/AuditTab";
+import { CommunityTab } from "./tabs/CommunityTab";
 import { DashboardTab } from "./tabs/DashboardTab";
 import { JudgesTab } from "./tabs/JudgesTab";
 import { ResultsTab } from "./tabs/ResultsTab";
@@ -17,6 +18,7 @@ const TABS = [
   { id: "assignments", label: "Assignments" },
   { id: "dashboard", label: "Dashboard" },
   { id: "results", label: "Results" },
+  { id: "community", label: "Community" },
   { id: "audit", label: "Audit" },
 ] as const;
 
@@ -75,6 +77,7 @@ function EventManageContent() {
       {activeTab === "assignments" ? <AssignmentsTab eventId={eventId} /> : null}
       {activeTab === "dashboard" ? <DashboardTab eventId={eventId} /> : null}
       {activeTab === "results" ? <ResultsTab eventId={eventId} /> : null}
+      {activeTab === "community" ? <CommunityTab eventId={eventId} /> : null}
       {activeTab === "audit" ? <AuditTab eventId={eventId} /> : null}
     </div>
   );

@@ -15,12 +15,24 @@ function assertTimeline(
   submissionsOpen: Date,
   submissionsClose: Date,
   judgingClose: Date | null,
+  votingOpen: Date | null,
+  votingClose: Date | null,
 ): void {
   if (!(submissionsOpen < submissionsClose)) {
     throw badRequest("submissionsOpen must be before submissionsClose");
   }
   if (judgingClose !== null && !(submissionsClose <= judgingClose)) {
     throw badRequest("submissionsClose must be on or before judgingClose");
+  }
+  if (votingOpen !== null && votingClose !== null) {
+    if (!(votingOpen < votingClose)) {
+      throw badRequest("votingOpen must be before votingClose");
+    }
+    if (!(submissionsClose <= votingOpen)) {
+      throw badRequest("votingOpen must be on or after submissionsClose");
+    }
+  } else if (votingOpen !== null || votingClose !== null) {
+    throw badRequest("votingOpen and votingClose must both be provided or both be omitted");
   }
 }
 
@@ -32,6 +44,8 @@ function serializeEvent(
     submissionsOpen: Date;
     submissionsClose: Date;
     judgingClose: Date | null;
+    votingOpen: Date | null;
+    votingClose: Date | null;
     publishedAt: Date | null;
     resultsPublishedAt: Date | null;
     maxTeamSize: number;
@@ -62,6 +76,8 @@ function serializeEvent(
     submissionsOpen: event.submissionsOpen.toISOString(),
     submissionsClose: event.submissionsClose.toISOString(),
     judgingClose: event.judgingClose?.toISOString() ?? null,
+    votingOpen: event.votingOpen?.toISOString() ?? null,
+    votingClose: event.votingClose?.toISOString() ?? null,
     publishedAt: event.publishedAt?.toISOString() ?? null,
     resultsPublishedAt: event.resultsPublishedAt?.toISOString() ?? null,
     maxTeamSize: event.maxTeamSize,
@@ -138,7 +154,9 @@ export async function createEvent(req: Request, body: CreateEventBody) {
   const submissionsOpen = parseDate(body.submissionsOpen);
   const submissionsClose = parseDate(body.submissionsClose);
   const judgingClose = body.judgingClose ? parseDate(body.judgingClose) : null;
-  assertTimeline(submissionsOpen, submissionsClose, judgingClose);
+  const votingOpen = body.votingOpen ? parseDate(body.votingOpen) : null;
+  const votingClose = body.votingClose ? parseDate(body.votingClose) : null;
+  assertTimeline(submissionsOpen, submissionsClose, judgingClose, votingOpen, votingClose);
 
   const event = await prisma.$transaction(async (tx) => {
     const created = await tx.event.create({
@@ -148,6 +166,8 @@ export async function createEvent(req: Request, body: CreateEventBody) {
         submissionsOpen,
         submissionsClose,
         judgingClose,
+        votingOpen,
+        votingClose,
         maxTeamSize: body.maxTeamSize,
         reviewsPerProject: body.reviewsPerProject,
         tracks: {
@@ -214,7 +234,19 @@ export async function updateEvent(req: Request, eventId: string, body: PatchEven
       : body.judgingClose === null
         ? null
         : parseDate(body.judgingClose);
-  assertTimeline(submissionsOpen, submissionsClose, judgingClose);
+  const votingOpen =
+    body.votingOpen === undefined
+      ? existing.votingOpen
+      : body.votingOpen === null
+        ? null
+        : parseDate(body.votingOpen);
+  const votingClose =
+    body.votingClose === undefined
+      ? existing.votingClose
+      : body.votingClose === null
+        ? null
+        : parseDate(body.votingClose);
+  assertTimeline(submissionsOpen, submissionsClose, judgingClose, votingOpen, votingClose);
 
   const event = await prisma.event.update({
     where: { id: eventId },
@@ -224,6 +256,8 @@ export async function updateEvent(req: Request, eventId: string, body: PatchEven
       submissionsOpen,
       submissionsClose,
       judgingClose,
+      votingOpen,
+      votingClose,
       ...(body.maxTeamSize !== undefined ? { maxTeamSize: body.maxTeamSize } : {}),
       ...(body.reviewsPerProject !== undefined
         ? { reviewsPerProject: body.reviewsPerProject }

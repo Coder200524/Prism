@@ -59,3 +59,7 @@ export {
   type ManualAssignmentBody,
   type ScoreUpdateBody,
 } from "./schemas/judging.js";
+
+export { castVoteBodySchema, voidVoteBodySchema, type CastVoteBody } from "./schemas/voting.js";
+
+export { createCommentBodySchema, hideCommentBodySchema } from "./schemas/comments.js";

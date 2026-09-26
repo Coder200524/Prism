@@ -12,6 +12,7 @@ import { SubmitProjectPage } from "./pages/participant/SubmitProject";
 import { EventFormPage } from "./pages/organizer/EventForm";
 import { EventManagePage } from "./pages/organizer/EventManage";
 import { OrganizerHomePage } from "./pages/organizer/OrganizerHome";
+import { CommunityResultsPage } from "./pages/public/CommunityResultsPage";
 import { EventPage } from "./pages/public/EventPage";
 import { EventsPage } from "./pages/public/Events";
 import { GalleryPage } from "./pages/public/Gallery";
@@ -20,6 +21,7 @@ import { LoginPage } from "./pages/public/Login";
 import { ProjectPage } from "./pages/public/ProjectPage";
 import { RegisterPage } from "./pages/public/Register";
 import { ResultsPage } from "./pages/public/Results";
+import { VotePage } from "./pages/public/VotePage";
 
 export function App() {
   return (
@@ -30,6 +32,8 @@ export function App() {
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="events/:eventId" element={<EventPage />} />
         <Route path="events/:eventId/results" element={<ResultsPage />} />
+        <Route path="events/:eventId/vote" element={<VotePage />} />
+        <Route path="events/:eventId/community-results" element={<CommunityResultsPage />} />
         <Route path="projects/:projectId" element={<ProjectPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />

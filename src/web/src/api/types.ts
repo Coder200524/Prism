@@ -5,6 +5,8 @@ export type EventSummary = {
   submissionsOpen: string;
   submissionsClose: string;
   judgingClose: string | null;
+  votingOpen: string | null;
+  votingClose: string | null;
   publishedAt: string | null;
   resultsPublishedAt: string | null;
   maxTeamSize: number;
@@ -224,4 +226,75 @@ export type AuditItem = {
   targetType: string;
   targetId: string | null;
   summary: string;
+};
+
+export type BallotTrack = {
+  trackId: string;
+  trackName: string;
+  projects: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    teamName: string;
+  }>;
+};
+
+export type BallotResponse = {
+  votingOpen: string;
+  votingClose: string;
+  isOpen: boolean;
+  tracks: BallotTrack[];
+  myVotes: Record<string, string>;
+};
+
+export type CommentItem = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { id: string; name: string };
+};
+
+export type CommunityResultsTrack = {
+  trackId: string;
+  trackName: string;
+  projects: Array<{
+    rank: number;
+    projectId: string;
+    title: string;
+    votes: number;
+    flaggedExcluded: number;
+  }>;
+};
+
+export type CommunityResultsResponse = {
+  tracks: CommunityResultsTrack[];
+};
+
+export type CommunityTurnout = {
+  totalVotes: number;
+  uniqueVoters: number;
+  flaggedCount: number;
+};
+
+export type FlaggedVote = {
+  id: string;
+  voterId: string;
+  voterName: string;
+  projectId: string;
+  projectTitle: string;
+  trackName: string;
+  flags: string[];
+  voided: boolean;
+  createdAt: string;
+};
+
+export type EventComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  projectId: string;
+  projectTitle: string;
+  author: { id: string; name: string };
+  hiddenAt: string | null;
+  hiddenReason: string | null;
 };
