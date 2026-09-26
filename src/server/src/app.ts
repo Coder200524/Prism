@@ -14,6 +14,7 @@ import {
 } from "./modules/judging/routes.js";
 import { projectsRouter } from "./modules/projects/routes.js";
 import { teamsRouter } from "./modules/teams/routes.js";
+import { communityRouter } from "./modules/community/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -43,6 +44,7 @@ export function createApp(): Express {
 
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/events", communityRouter);
   app.use("/api/events", eventsRouter);
   app.use("/api/teams", teamsRouter);
   app.use("/api/projects", projectsRouter);

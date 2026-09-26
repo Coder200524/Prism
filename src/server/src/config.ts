@@ -9,6 +9,7 @@ const envSchema = z.object({
     .optional()
     .transform((value) => value === "true"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  VOTING_SECRET: z.string().default("default-voting-secret-for-dev"),
 });
 
 export type Config = z.infer<typeof envSchema>;
