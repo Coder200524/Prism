@@ -122,6 +122,8 @@ export type Dashboard = {
     submitted: number;
     pending: number;
     percentComplete: number;
+    targetCoverage: number;
+    coveragePercent: number;
   };
   judges: Array<{
     id: string;

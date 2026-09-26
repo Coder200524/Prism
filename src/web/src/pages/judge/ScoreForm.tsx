@@ -8,6 +8,7 @@ import { Card } from "../../components/Card";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { Input } from "../../components/Input";
 import { Textarea } from "../../components/Textarea";
+import { isSafeUrl } from "../../lib/url";
 
 function ScoreFormContent() {
   const { assignmentId = "" } = useParams();
@@ -70,7 +71,7 @@ function ScoreFormContent() {
       <Card title="Project">
         <p className="whitespace-pre-wrap text-sm text-slate-700">{assignment.project.summary}</p>
         <div className="mt-3 space-y-1 text-sm">
-          {assignment.project.repoUrl ? (
+          {isSafeUrl(assignment.project.repoUrl) ? (
             <p>
               Repo:{" "}
               <a
@@ -83,7 +84,7 @@ function ScoreFormContent() {
               </a>
             </p>
           ) : null}
-          {assignment.project.demoUrl ? (
+          {isSafeUrl(assignment.project.demoUrl) ? (
             <p>
               Demo:{" "}
               <a

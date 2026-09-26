@@ -50,7 +50,7 @@ export type ProjectResult = {
   normalizedScore: number | null;
   reviewCount: number;
   rank: number | null;
-  flags: Array<"under_reviewed" | "duplicate">;
+  flags: Array<"under_reviewed" | "duplicate" | "below_target">;
   excludedFromRanking: boolean;
   criterionAverages: Record<string, number | null>;
 };
@@ -161,17 +161,20 @@ export function normalizeScores(input: NormalizationInput): NormalizationOutput 
     const sigma = populationStdDev(totals, mu);
     const n = totals.length;
     judgeStats.set(judgeId, { mu, sigma, n });
-    if (sigma === 0 && n > 0) flatScorerJudgeIds.push(judgeId);
-    if (n < 3) lowSampleJudgeIds.push(judgeId);
+    if (n < 3) {
+      lowSampleJudgeIds.push(judgeId);
+    } else if (sigma === 0) {
+      flatScorerJudgeIds.push(judgeId);
+    }
   }
 
   const normalizedReviews: ReviewNormalization[] = reviewTotals.map((row) => {
     const stats = judgeStats.get(row.review.judgeId) ?? { mu: muGlobal, sigma: 0, n: 0 };
     let z = 0;
-    if (stats.sigma === 0) {
-      z = 0;
-    } else if (stats.n < 3) {
+    if (stats.n < 3) {
       z = sigmaGlobal === 0 ? 0 : (row.total - muGlobal) / sigmaGlobal;
+    } else if (stats.sigma === 0) {
+      z = 0;
     } else {
       z = (row.total - stats.mu) / stats.sigma;
     }
@@ -199,9 +202,10 @@ export function normalizeScores(input: NormalizationInput): NormalizationOutput 
   const projectResults: ProjectResult[] = projects.map((project) => {
     const projectReviews = reviewsByProject.get(project.id) ?? [];
     const reviewCount = projectReviews.length;
-    const flags: Array<"under_reviewed" | "duplicate"> = [];
+    const flags: Array<"under_reviewed" | "duplicate" | "below_target"> = [];
     if (project.duplicateOfId) flags.push("duplicate");
     if (reviewCount < underReviewedThreshold) flags.push("under_reviewed");
+    if (reviewCount < reviewsPerProject) flags.push("below_target");
 
     const criterionAverages: Record<string, number | null> = {};
     for (const criterion of criteria) {

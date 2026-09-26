@@ -4,6 +4,7 @@ import { Card } from "../../components/Card";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { DateTime } from "../../lib/datetime";
+import { isSafeUrl } from "../../lib/url";
 
 export function ProjectPage() {
   const { projectId } = useParams();
@@ -34,8 +35,8 @@ export function ProjectPage() {
         <ul className="space-y-2 text-sm">
           <li>
             Repo:{" "}
-            {project.repoUrl ? (
-              <a className="text-indigo-600 hover:underline" href={project.repoUrl}>
+            {isSafeUrl(project.repoUrl) ? (
+              <a className="text-indigo-600 hover:underline" href={project.repoUrl} target="_blank" rel="noopener noreferrer">
                 {project.repoUrl}
               </a>
             ) : (
@@ -44,8 +45,8 @@ export function ProjectPage() {
           </li>
           <li>
             Demo:{" "}
-            {project.demoUrl ? (
-              <a className="text-indigo-600 hover:underline" href={project.demoUrl}>
+            {isSafeUrl(project.demoUrl) ? (
+              <a className="text-indigo-600 hover:underline" href={project.demoUrl} target="_blank" rel="noopener noreferrer">
                 {project.demoUrl}
               </a>
             ) : (

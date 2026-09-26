@@ -9,7 +9,7 @@ import {
 } from "@prisma/client";
 import { clock } from "../lib/clock.js";
 import { prisma } from "../lib/prisma.js";
-import { hashToken } from "../lib/tokens.js";
+import { hashToken, generateToken } from "../lib/tokens.js";
 import { findDuplicates } from "../modules/projects/duplicates.js";
 import {
   equalWeightsSummingTo100,
@@ -186,7 +186,7 @@ async function seedFixtureEvent(
         id: team.id,
         eventId: fixtures.event.id,
         name: uniqueName,
-        inviteCode: `inv_${team.id}`,
+        inviteCode: generateToken(16),
       },
       update: {},
     });
@@ -227,7 +227,7 @@ async function seedFixtureEvent(
           id: syntheticId,
           eventId: fixtures.event.id,
           name: `${sourceTeam?.name ?? project.team} (duplicate entry)`,
-          inviteCode: `inv_${syntheticId}`,
+          inviteCode: generateToken(16),
         },
         update: {},
       });
@@ -351,13 +351,13 @@ async function seedFixtureEvent(
     participantEmail,
     participantId,
     counts: {
-      tracks: fixtures.tracks.length,
-      judges: fixtures.judges.length,
-      teams: fixtures.teams.length,
-      projects: fixtures.projects.length,
-      scores: fixtures.scores.length,
-      criteria: criterionKeys.length,
-      duplicates: duplicateMap.size,
+      tracks: await prisma.track.count({ where: { eventId: fixtures.event.id } }),
+      judges: await prisma.eventRole.count({ where: { eventId: fixtures.event.id, role: EventRoleType.JUDGE } }),
+      teams: await prisma.team.count({ where: { eventId: fixtures.event.id } }),
+      projects: await prisma.project.count({ where: { eventId: fixtures.event.id } }),
+      scores: await prisma.criterionScore.count({ where: { assignment: { eventId: fixtures.event.id } } }),
+      criteria: await prisma.criterion.count({ where: { eventId: fixtures.event.id } }),
+      duplicates: await prisma.project.count({ where: { eventId: fixtures.event.id, duplicateOfId: { not: null } } }),
     },
   };
 }
@@ -509,13 +509,13 @@ function printSummary(input: {
   const lines = [
     "┌────────────────────────────────────────────────────────────┐",
     "│ DOGFOOD Portal — seed complete                             │",
-    `│ URL: ${input.publicUrl.padEnd(52)}│`,
+    `│ URL: ${input.publicUrl}`.padEnd(61) + `│`,
     "│                                                            │",
     "│ Demo accounts (password: dogfood-demo)                     │",
     "│   admin@dogfood.local        ADMIN                         │",
     "│   organizer@dogfood.local    ORGANIZER                     │",
     "│   judge A / judge B          fixture judges 1 & 2          │",
-    `│   participant                ${input.participantEmail.padEnd(28)}│`,
+    `│   participant                ${input.participantEmail}`.padEnd(61) + `│`,
     "│                                                            │",
     ...(input.seedDemo
       ? [
@@ -531,8 +531,8 @@ function printSummary(input: {
           "│                                                            │",
         ]),
     "│ Fixture import counts                                      │",
-    `│   tracks=${String(input.counts.tracks).padEnd(4)} judges=${String(input.counts.judges).padEnd(4)} teams=${String(input.counts.teams).padEnd(4)}          │`,
-    `│   projects=${String(input.counts.projects).padEnd(3)} scores=${String(input.counts.scores).padEnd(4)} criteria=${String(input.counts.criteria).padEnd(2)} dups=${String(input.counts.duplicates).padEnd(2)}   │`,
+    `│   tracks=${String(input.counts.tracks).padEnd(4)} judges=${String(input.counts.judges).padEnd(4)} teams=${String(input.counts.teams).padEnd(4)}`.padEnd(61) + `│`,
+    `│   projects=${String(input.counts.projects).padEnd(3)} scores=${String(input.counts.scores).padEnd(4)} criteria=${String(input.counts.criteria).padEnd(2)} dups=${String(input.counts.duplicates).padEnd(2)}`.padEnd(61) + `│`,
     "│ Also seeded: Demo Open Hack (evt_demo)                     │",
     "└────────────────────────────────────────────────────────────┘",
   ];
