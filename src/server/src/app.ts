@@ -21,7 +21,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createApp(): Express {
   const app = express();
 
-  app.set("trust proxy", 1);
+  if (process.env.TRUST_PROXY === "1") {
+    app.set("trust proxy", 1);
+  }
+  
+  app.use((_req: Request, res: Response, next: express.NextFunction) => {
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.removeHeader("X-Powered-By");
+    next();
+  });
+
   app.use(express.json({ limit: "1mb" }));
   app.use(authenticate);
 

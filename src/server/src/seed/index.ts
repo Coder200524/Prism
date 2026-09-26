@@ -134,13 +134,7 @@ async function seedFixtureEvent(
       submissionsClose: new Date(fixtures.event.submissions_close),
       publishedAt: seedTime,
     },
-    update: {
-      name: fixtures.event.name,
-      description: fixtures.event.description ?? "",
-      submissionsOpen,
-      submissionsClose: new Date(fixtures.event.submissions_close),
-      publishedAt: seedTime,
-    },
+    update: {},
   });
 
   for (const track of fixtures.tracks) {
@@ -152,11 +146,7 @@ async function seedFixtureEvent(
         name: track.name,
         description: track.description ?? "",
       },
-      update: {
-        name: track.name,
-        description: track.description ?? "",
-        eventId: fixtures.event.id,
-      },
+      update: {},
     });
   }
 
@@ -174,7 +164,7 @@ async function seedFixtureEvent(
       await prisma.judgeTrack.upsert({
         where: { userId_trackId: { userId: user.id, trackId } },
         create: { userId: user.id, trackId, eventId: fixtures.event.id },
-        update: { eventId: fixtures.event.id },
+        update: {},
       });
     }
   }
@@ -198,11 +188,7 @@ async function seedFixtureEvent(
         name: uniqueName,
         inviteCode: `inv_${team.id}`,
       },
-      update: {
-        name: uniqueName,
-        eventId: fixtures.event.id,
-        inviteCode: `inv_${team.id}`,
-      },
+      update: {},
     });
 
     for (const email of team.members) {
@@ -220,7 +206,7 @@ async function seedFixtureEvent(
       await prisma.teamMember.upsert({
         where: { teamId_userId: { teamId: team.id, userId } },
         create: { teamId: team.id, userId, eventId: fixtures.event.id },
-        update: { eventId: fixtures.event.id },
+        update: {},
       });
 
       if (!participantEmail && !judgeEmails.has(email)) {
@@ -243,11 +229,7 @@ async function seedFixtureEvent(
           name: `${sourceTeam?.name ?? project.team} (duplicate entry)`,
           inviteCode: `inv_${syntheticId}`,
         },
-        update: {
-          eventId: fixtures.event.id,
-          name: `${sourceTeam?.name ?? project.team} (duplicate entry)`,
-          inviteCode: `inv_${syntheticId}`,
-        },
+        update: {},
       });
       teamId = syntheticId;
     }
@@ -268,18 +250,7 @@ async function seedFixtureEvent(
         status: submittedAt ? ProjectStatus.SUBMITTED : ProjectStatus.DRAFT,
         submittedAt,
       },
-      update: {
-        eventId: fixtures.event.id,
-        teamId,
-        trackId: project.track ?? null,
-        title: project.title,
-        summary: project.summary ?? "",
-        repoUrl: project.repo_url ?? "",
-        demoUrl: project.demo_url ?? "",
-        status: submittedAt ? ProjectStatus.SUBMITTED : ProjectStatus.DRAFT,
-        submittedAt,
-        duplicateOfId: null,
-      },
+      update: {},
     });
   }
 
@@ -318,13 +289,7 @@ async function seedFixtureEvent(
         maxScore,
         position: index,
       },
-      update: {
-        name: titleCaseKey(key),
-        weight: weights[index] ?? 0,
-        minScore,
-        maxScore,
-        position: index,
-      },
+      update: {},
     });
     criterionIdByKey.set(key, criterion.id);
   }
@@ -342,14 +307,7 @@ async function seedFixtureEvent(
         comment: score.comment ?? "",
         submittedAt: seedTime,
       },
-      update: {
-        eventId: fixtures.event.id,
-        judgeId: score.judge,
-        projectId: score.project,
-        status: AssignmentStatus.SUBMITTED,
-        comment: score.comment ?? "",
-        submittedAt: seedTime,
-      },
+      update: {},
     });
 
     for (const [key, value] of Object.entries(score.criteria)) {
@@ -360,7 +318,7 @@ async function seedFixtureEvent(
           assignmentId_criterionId: { assignmentId, criterionId },
         },
         create: { assignmentId, criterionId, value },
-        update: { value },
+        update: {},
       });
     }
   }
@@ -469,10 +427,7 @@ async function seedDemoSessions(
         userId: session.userId,
         expiresAt,
       },
-      update: {
-        userId: session.userId,
-        expiresAt,
-      },
+      update: {},
     });
   }
 }
@@ -491,13 +446,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
       maxTeamSize: 4,
       reviewsPerProject: 3,
     },
-    update: {
-      name: "Demo Open Hack",
-      description: "Live demo event with submissions open for 7 days.",
-      submissionsOpen: seedTime,
-      submissionsClose,
-      publishedAt: seedTime,
-    },
+    update: {},
   });
 
   await upsertEventRole(organizerId, DEMO_OPEN_HACK_ID, EventRoleType.ORGANIZER);
@@ -514,10 +463,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
         eventId: DEMO_OPEN_HACK_ID,
         name: track.name,
       },
-      update: {
-        eventId: DEMO_OPEN_HACK_ID,
-        name: track.name,
-      },
+      update: {},
     });
   }
 
@@ -541,13 +487,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
         maxScore: 5,
         position: criterion.position,
       },
-      update: {
-        name: criterion.name,
-        weight: criterion.weight,
-        minScore: 1,
-        maxScore: 5,
-        position: criterion.position,
-      },
+      update: {},
     });
   }
 }

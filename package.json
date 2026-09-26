@@ -13,7 +13,8 @@
     "typecheck": "npm run typecheck -w @dogfood/shared && npm run typecheck -w @dogfood/server && npm run typecheck -w @dogfood/web",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "cd src/server && npx --no-install prisma generate && cd ../.. && npm run build -w @dogfood/shared"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

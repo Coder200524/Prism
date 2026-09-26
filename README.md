@@ -11,11 +11,12 @@ normalization, results, CSV export).
 ## One-command start
 
 ```bash
-docker compose up --build
+docker compose up -d --build --wait
 ```
 
 Open [http://localhost:8080](http://localhost:8080). On first boot the app runs migrations,
-seeds `fixtures.json` plus Demo Open Hack, then serves the API and SPA on port 8080.
+seeds `fixtures.json` plus Demo Open Hack, then serves the API and SPA on port 8080. 
+Make sure to run the above command and wait for it to return before running `run.py`.
 
 ## Demo accounts
 

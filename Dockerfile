@@ -4,7 +4,7 @@ COPY package.json package-lock.json* ./
 COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/web/package.json src/web/
-RUN npm install
+RUN npm install --ignore-scripts
 
 FROM deps AS build
 WORKDIR /app
@@ -20,17 +20,18 @@ RUN npm run build -w @dogfood/shared \
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV CHECKPOINT_DISABLE=1
 COPY package.json package-lock.json* ./
 COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/web/package.json src/web/
 COPY src/server/prisma src/server/prisma
-RUN npm install --omit=dev \
-  && cd src/server && npx prisma generate
+RUN npm install --omit=dev --ignore-scripts \
+  && cd src/server && npx --no-install prisma generate
 COPY --from=build /app/src/shared/dist src/shared/dist
 COPY --from=build /app/src/server/dist src/server/dist
 COPY --from=build /app/src/web/dist src/web/dist
 COPY fixtures.json /app/fixtures.json
 WORKDIR /app/src/server
 EXPOSE 8080
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/seed/index.js && node dist/index.js"]
+CMD ["sh", "-c", "npx --no-install prisma migrate deploy && node dist/seed/index.js && node dist/index.js"]
