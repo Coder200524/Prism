@@ -7,7 +7,7 @@ import * as authService from "./service.js";
 
 const authRateLimit = rateLimit({
   windowMs: 60_000,
-  limit: process.env.NODE_ENV === "test" ? 10_000 : 10,
+  limit: () => (process.env.TEST_RATE_LIMIT === "1" ? 10 : process.env.NODE_ENV === "test" ? 10_000 : 10),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

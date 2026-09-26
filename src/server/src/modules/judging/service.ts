@@ -101,6 +101,10 @@ export async function putCriteria(req: Request, eventId: string, body: PutCriter
         where: { id: { in: removed.map((criterion) => criterion.id) } },
       });
     }
+    const keys = new Set(body.criteria.map(c => c.key));
+    if (keys.size !== body.criteria.length) {
+      throw badRequest("Criteria keys must be unique");
+    }
     for (let index = 0; index < body.criteria.length; index += 1) {
       const criterion = body.criteria[index];
       if (!criterion) continue;
@@ -679,7 +683,7 @@ export async function updateScores(req: Request, assignmentId: string, body: Sco
     await tx.assignment.update({
       where: { id: assignmentId },
       data: {
-        comment: body.comment,
+        comment: body.comment !== undefined ? body.comment : assignment.comment,
         ...(body.submit
           ? {
               status: AssignmentStatus.SUBMITTED,
@@ -690,7 +694,7 @@ export async function updateScores(req: Request, assignmentId: string, body: Sco
     });
   });
 
-  if (body.submit && wasSubmitted) {
+  if (wasSubmitted) {
     await audit(req, "score.edit_after_submit", {
       type: "assignment",
       id: assignmentId,
@@ -750,11 +754,38 @@ export async function getJudgeScores(
     }
 
     if (!allowed) {
-      await audit(req, "access.denied_peer_scores", {
-        type: "user",
-        id: requestedJudgeId,
-        eventId: query.eventId,
-      });
+      let validEventId: string | undefined = undefined;
+      if (query.eventId) {
+        const evt = await prisma.event.findUnique({ where: { id: query.eventId } });
+        if (evt) validEventId = query.eventId;
+      }
+      
+      const targetEvents = validEventId
+        ? [{ eventId: validEventId }]
+        : await prisma.eventRole.findMany({
+            where: { userId: requestedJudgeId, role: EventRoleType.JUDGE },
+            select: { eventId: true },
+          });
+
+      if (targetEvents.length === 0) {
+        await audit(req, "access.denied_peer_scores", {
+          type: "user",
+          id: requestedJudgeId,
+          eventId: undefined,
+        });
+      } else {
+        for (const te of targetEvents) {
+          await audit(req, "access.denied_peer_scores", {
+            type: "user",
+            id: requestedJudgeId,
+            eventId: te.eventId,
+          });
+        }
+      }
+
+      if (query.eventId && !validEventId) {
+        throw notFound("Event not found");
+      }
       throw forbidden("forbidden", "Judges can only view their own scores.");
     }
   } else {
@@ -1044,6 +1075,16 @@ export async function getDashboard(eventId: string) {
       message: `${judge?.user.name ?? judgeId} gave identical scores`,
     });
   }
+  for (const judge of judges) {
+    const submittedCount = judge.user.assignments.filter((a) => a.status === "SUBMITTED").length;
+    if (submittedCount < 3) {
+      flags.push({
+        type: "low_sample",
+        targetId: judge.user.id,
+        message: `${judge.user.name ?? judge.user.id} has only ${submittedCount} submitted reviews`,
+      });
+    }
+  }
   for (const project of normalized.projects) {
     if (project.flags.includes("under_reviewed")) {
       flags.push({
@@ -1078,13 +1119,17 @@ export async function getDashboard(eventId: string) {
       pending,
       percentComplete: Math.round(percentComplete * 10) / 10,
     },
-    judges: judges.map((row) => ({
-      id: row.user.id,
-      name: row.user.name,
-      assigned: row.user.assignments.length,
-      submitted: row.user.assignments.filter((a) => a.status === "SUBMITTED").length,
-      flatScorer: normalized.flatScorerJudgeIds.includes(row.user.id),
-    })),
+    judges: judges.map((row) => {
+      const submitted = row.user.assignments.filter((a) => a.status === "SUBMITTED").length;
+      return {
+        id: row.user.id,
+        name: row.user.name,
+        assigned: row.user.assignments.length,
+        submitted,
+        flatScorer: normalized.flatScorerJudgeIds.includes(row.user.id),
+        lowSample: submitted < 3,
+      };
+    }),
     projects: data.projects.map((project) => {
       const counts = assignedByProject.get(project.id) ?? { assigned: 0, submitted: 0 };
       return {

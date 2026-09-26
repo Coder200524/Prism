@@ -189,13 +189,14 @@ model Project {
   repoUrl       String        @default("")
   demoUrl       String        @default("")
   status        ProjectStatus @default(DRAFT)
-  submittedAt   DateTime?
-  duplicateOfId String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  team          Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  track         Track?        @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  submittedAt      DateTime?
+  duplicateOfId    String?
+  duplicateCleared Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  event            Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  team             Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  track            Track?        @relation(fields: [trackId], references: [id], onDelete: SetNull)
   duplicateOf   Project?      @relation("Duplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
   duplicates    Project[]     @relation("Duplicates")
 

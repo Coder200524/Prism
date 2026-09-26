@@ -41,4 +41,46 @@ describe("api/seed", () => {
     expect(first.projects).toBeGreaterThan(0);
     expect(first.assignments).toBeGreaterThan(0);
   });
+
+  it("preserves edits to scores and rubric weights when run twice", async () => {
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    // Find a criterion and change its weight
+    const criterion = await prisma.criterion.findFirstOrThrow();
+    await prisma.criterion.update({
+      where: { id: criterion.id },
+      data: { weight: 99 },
+    });
+
+    // Find a score and change its value
+    const score = await prisma.criterionScore.findFirstOrThrow();
+    await prisma.criterionScore.update({
+      where: {
+        assignmentId_criterionId: {
+          assignmentId: score.assignmentId,
+          criterionId: score.criterionId,
+        },
+      },
+      data: { value: 999 },
+    });
+
+    // Run seed again
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    // Check if edits are preserved
+    const updatedCriterion = await prisma.criterion.findUniqueOrThrow({
+      where: { id: criterion.id },
+    });
+    expect(updatedCriterion.weight).toBe(99);
+
+    const updatedScore = await prisma.criterionScore.findUniqueOrThrow({
+      where: {
+        assignmentId_criterionId: {
+          assignmentId: score.assignmentId,
+          criterionId: score.criterionId,
+        },
+      },
+    });
+    expect(updatedScore.value).toBe(999);
+  });
 });

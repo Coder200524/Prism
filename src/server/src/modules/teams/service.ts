@@ -7,7 +7,7 @@ import { clock } from "../../lib/clock.js";
 import { conflict, forbidden, notFound, unauthorized } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { generateToken } from "../../lib/tokens.js";
-import { submissionsOpen } from "../events/phase.js";
+import { submissionsOpen, isVisible } from "../events/phase.js";
 import { submissionsClosedError } from "../events/service.js";
 
 function inviteUrl(code: string): string {
@@ -86,7 +86,7 @@ export async function createTeam(req: Request, eventId: string, body: CreateTeam
   if (!req.user) throw unauthorized();
 
   const event = await prisma.event.findUnique({ where: { id: eventId } });
-  if (!event) throw notFound("Event not found");
+  if (!event || !isVisible(event)) throw notFound("Event not found");
 
   const now = clock.now();
   if (!submissionsOpen(event, now)) {
@@ -191,12 +191,16 @@ export async function joinByInvite(req: Request, code: string) {
 
   await assertCanJoinAsParticipant(req.user.id, team.eventId);
 
-  if (team._count.members >= team.event.maxTeamSize) {
-    throw conflict("team_full", "This team is full");
-  }
-
   try {
     await prisma.$transaction(async (tx) => {
+      // Lock the team row
+      await tx.$queryRaw`SELECT id FROM "Team" WHERE id = ${team.id} FOR UPDATE`;
+      
+      const memberCount = await tx.teamMember.count({ where: { teamId: team.id } });
+      if (memberCount >= team.event.maxTeamSize) {
+        throw conflict("team_full", "This team is full");
+      }
+
       await tx.teamMember.create({
         data: {
           teamId: team.id,

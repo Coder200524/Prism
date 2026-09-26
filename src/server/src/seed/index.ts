@@ -9,7 +9,7 @@ import {
 } from "@prisma/client";
 import { clock } from "../lib/clock.js";
 import { prisma } from "../lib/prisma.js";
-import { hashToken } from "../lib/tokens.js";
+import { hashToken, generateToken } from "../lib/tokens.js";
 import { findDuplicates } from "../modules/projects/duplicates.js";
 import {
   equalWeightsSummingTo100,
@@ -134,13 +134,7 @@ async function seedFixtureEvent(
       submissionsClose: new Date(fixtures.event.submissions_close),
       publishedAt: seedTime,
     },
-    update: {
-      name: fixtures.event.name,
-      description: fixtures.event.description ?? "",
-      submissionsOpen,
-      submissionsClose: new Date(fixtures.event.submissions_close),
-      publishedAt: seedTime,
-    },
+    update: {},
   });
 
   for (const track of fixtures.tracks) {
@@ -152,11 +146,7 @@ async function seedFixtureEvent(
         name: track.name,
         description: track.description ?? "",
       },
-      update: {
-        name: track.name,
-        description: track.description ?? "",
-        eventId: fixtures.event.id,
-      },
+      update: {},
     });
   }
 
@@ -174,7 +164,7 @@ async function seedFixtureEvent(
       await prisma.judgeTrack.upsert({
         where: { userId_trackId: { userId: user.id, trackId } },
         create: { userId: user.id, trackId, eventId: fixtures.event.id },
-        update: { eventId: fixtures.event.id },
+        update: {},
       });
     }
   }
@@ -196,13 +186,9 @@ async function seedFixtureEvent(
         id: team.id,
         eventId: fixtures.event.id,
         name: uniqueName,
-        inviteCode: `inv_${team.id}`,
+        inviteCode: generateToken(16),
       },
-      update: {
-        name: uniqueName,
-        eventId: fixtures.event.id,
-        inviteCode: `inv_${team.id}`,
-      },
+      update: {},
     });
 
     for (const email of team.members) {
@@ -220,7 +206,7 @@ async function seedFixtureEvent(
       await prisma.teamMember.upsert({
         where: { teamId_userId: { teamId: team.id, userId } },
         create: { teamId: team.id, userId, eventId: fixtures.event.id },
-        update: { eventId: fixtures.event.id },
+        update: {},
       });
 
       if (!participantEmail && !judgeEmails.has(email)) {
@@ -241,13 +227,9 @@ async function seedFixtureEvent(
           id: syntheticId,
           eventId: fixtures.event.id,
           name: `${sourceTeam?.name ?? project.team} (duplicate entry)`,
-          inviteCode: `inv_${syntheticId}`,
+          inviteCode: generateToken(16),
         },
-        update: {
-          eventId: fixtures.event.id,
-          name: `${sourceTeam?.name ?? project.team} (duplicate entry)`,
-          inviteCode: `inv_${syntheticId}`,
-        },
+        update: {},
       });
       teamId = syntheticId;
     }
@@ -268,18 +250,7 @@ async function seedFixtureEvent(
         status: submittedAt ? ProjectStatus.SUBMITTED : ProjectStatus.DRAFT,
         submittedAt,
       },
-      update: {
-        eventId: fixtures.event.id,
-        teamId,
-        trackId: project.track ?? null,
-        title: project.title,
-        summary: project.summary ?? "",
-        repoUrl: project.repo_url ?? "",
-        demoUrl: project.demo_url ?? "",
-        status: submittedAt ? ProjectStatus.SUBMITTED : ProjectStatus.DRAFT,
-        submittedAt,
-        duplicateOfId: null,
-      },
+      update: {},
     });
   }
 
@@ -318,13 +289,7 @@ async function seedFixtureEvent(
         maxScore,
         position: index,
       },
-      update: {
-        name: titleCaseKey(key),
-        weight: weights[index] ?? 0,
-        minScore,
-        maxScore,
-        position: index,
-      },
+      update: {},
     });
     criterionIdByKey.set(key, criterion.id);
   }
@@ -342,14 +307,7 @@ async function seedFixtureEvent(
         comment: score.comment ?? "",
         submittedAt: seedTime,
       },
-      update: {
-        eventId: fixtures.event.id,
-        judgeId: score.judge,
-        projectId: score.project,
-        status: AssignmentStatus.SUBMITTED,
-        comment: score.comment ?? "",
-        submittedAt: seedTime,
-      },
+      update: {},
     });
 
     for (const [key, value] of Object.entries(score.criteria)) {
@@ -360,7 +318,7 @@ async function seedFixtureEvent(
           assignmentId_criterionId: { assignmentId, criterionId },
         },
         create: { assignmentId, criterionId, value },
-        update: { value },
+        update: {},
       });
     }
   }
@@ -393,13 +351,13 @@ async function seedFixtureEvent(
     participantEmail,
     participantId,
     counts: {
-      tracks: fixtures.tracks.length,
-      judges: fixtures.judges.length,
-      teams: fixtures.teams.length,
-      projects: fixtures.projects.length,
-      scores: fixtures.scores.length,
-      criteria: criterionKeys.length,
-      duplicates: duplicateMap.size,
+      tracks: await prisma.track.count({ where: { eventId: fixtures.event.id } }),
+      judges: await prisma.eventRole.count({ where: { eventId: fixtures.event.id, role: EventRoleType.JUDGE } }),
+      teams: await prisma.team.count({ where: { eventId: fixtures.event.id } }),
+      projects: await prisma.project.count({ where: { eventId: fixtures.event.id } }),
+      scores: await prisma.criterionScore.count({ where: { assignment: { eventId: fixtures.event.id } } }),
+      criteria: await prisma.criterion.count({ where: { eventId: fixtures.event.id } }),
+      duplicates: await prisma.project.count({ where: { eventId: fixtures.event.id, duplicateOfId: { not: null } } }),
     },
   };
 }
@@ -469,10 +427,7 @@ async function seedDemoSessions(
         userId: session.userId,
         expiresAt,
       },
-      update: {
-        userId: session.userId,
-        expiresAt,
-      },
+      update: {},
     });
   }
 }
@@ -491,13 +446,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
       maxTeamSize: 4,
       reviewsPerProject: 3,
     },
-    update: {
-      name: "Demo Open Hack",
-      description: "Live demo event with submissions open for 7 days.",
-      submissionsOpen: seedTime,
-      submissionsClose,
-      publishedAt: seedTime,
-    },
+    update: {},
   });
 
   await upsertEventRole(organizerId, DEMO_OPEN_HACK_ID, EventRoleType.ORGANIZER);
@@ -514,10 +463,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
         eventId: DEMO_OPEN_HACK_ID,
         name: track.name,
       },
-      update: {
-        eventId: DEMO_OPEN_HACK_ID,
-        name: track.name,
-      },
+      update: {},
     });
   }
 
@@ -541,13 +487,7 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
         maxScore: 5,
         position: criterion.position,
       },
-      update: {
-        name: criterion.name,
-        weight: criterion.weight,
-        minScore: 1,
-        maxScore: 5,
-        position: criterion.position,
-      },
+      update: {},
     });
   }
 }
@@ -569,13 +509,13 @@ function printSummary(input: {
   const lines = [
     "┌────────────────────────────────────────────────────────────┐",
     "│ DOGFOOD Portal — seed complete                             │",
-    `│ URL: ${input.publicUrl.padEnd(52)}│`,
+    `│ URL: ${input.publicUrl}`.padEnd(61) + `│`,
     "│                                                            │",
     "│ Demo accounts (password: dogfood-demo)                     │",
     "│   admin@dogfood.local        ADMIN                         │",
     "│   organizer@dogfood.local    ORGANIZER                     │",
     "│   judge A / judge B          fixture judges 1 & 2          │",
-    `│   participant                ${input.participantEmail.padEnd(28)}│`,
+    `│   participant                ${input.participantEmail}`.padEnd(61) + `│`,
     "│                                                            │",
     ...(input.seedDemo
       ? [
@@ -591,8 +531,8 @@ function printSummary(input: {
           "│                                                            │",
         ]),
     "│ Fixture import counts                                      │",
-    `│   tracks=${String(input.counts.tracks).padEnd(4)} judges=${String(input.counts.judges).padEnd(4)} teams=${String(input.counts.teams).padEnd(4)}          │`,
-    `│   projects=${String(input.counts.projects).padEnd(3)} scores=${String(input.counts.scores).padEnd(4)} criteria=${String(input.counts.criteria).padEnd(2)} dups=${String(input.counts.duplicates).padEnd(2)}   │`,
+    `│   tracks=${String(input.counts.tracks).padEnd(4)} judges=${String(input.counts.judges).padEnd(4)} teams=${String(input.counts.teams).padEnd(4)}`.padEnd(61) + `│`,
+    `│   projects=${String(input.counts.projects).padEnd(3)} scores=${String(input.counts.scores).padEnd(4)} criteria=${String(input.counts.criteria).padEnd(2)} dups=${String(input.counts.duplicates).padEnd(2)}`.padEnd(61) + `│`,
     "│ Also seeded: Demo Open Hack (evt_demo)                     │",
     "└────────────────────────────────────────────────────────────┘",
   ];

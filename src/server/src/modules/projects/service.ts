@@ -18,7 +18,7 @@ import {
   unauthorized,
 } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
-import { submissionsOpen } from "../events/phase.js";
+import { submissionsOpen, isVisible } from "../events/phase.js";
 import { submissionsClosedError } from "../events/service.js";
 import { findDuplicates } from "./duplicates.js";
 
@@ -71,11 +71,14 @@ async function assertTeamMember(userId: string, teamId: string) {
 async function runDuplicateDetection(eventId: string): Promise<void> {
   const projects = await prisma.project.findMany({
     where: { eventId, status: ProjectStatus.SUBMITTED },
-    select: { id: true, title: true, repoUrl: true, submittedAt: true },
+    select: { id: true, title: true, repoUrl: true, submittedAt: true, duplicateCleared: true },
   });
   const duplicateMap = findDuplicates(projects);
   for (const project of projects) {
-    const duplicateOfId = duplicateMap.get(project.id) ?? null;
+    let duplicateOfId = duplicateMap.get(project.id) ?? null;
+    if (project.duplicateCleared) {
+      duplicateOfId = null;
+    }
     await prisma.project.update({
       where: { id: project.id },
       data: { duplicateOfId },
@@ -169,7 +172,7 @@ export async function createProject(req: Request) {
   const resolvedEventId = eventId;
 
   const event = await prisma.event.findUnique({ where: { id: resolvedEventId } });
-  if (!event) throw notFound("Event not found");
+  if (!event || !isVisible(event)) throw notFound("Event not found");
 
   const now = clock.now();
   if (!submissionsOpen(event, now)) {
@@ -268,6 +271,16 @@ export async function updateProject(req: Request, projectId: string) {
     }
   }
 
+  if (project.status === ProjectStatus.SUBMITTED) {
+    const updatedTitle = body.title ?? project.title;
+    const updatedSummary = body.summary ?? project.summary;
+    const updatedTrackId = body.trackId !== undefined ? body.trackId : project.trackId;
+    const updatedRepoUrl = body.repoUrl ?? project.repoUrl;
+    if (!updatedTitle.trim() || !updatedSummary.trim() || !updatedTrackId || !updatedRepoUrl.trim()) {
+      throw new HttpError(400, "incomplete_project", "title, summary, trackId and repoUrl are required for submitted projects");
+    }
+  }
+
   const updated = await prisma.project.update({
     where: { id: projectId },
     data: {
@@ -309,7 +322,21 @@ export async function submitProject(req: Request, projectId: string) {
 
   await assertTeamMember(req.user.id, project.teamId);
 
-  if (!project.title.trim() || !project.summary.trim() || !project.trackId || !project.repoUrl.trim()) {
+  const rawBody = (req.body ?? {}) as Record<string, unknown>;
+  let newTrackId = project.trackId;
+  if (rawBody.trackId !== undefined) {
+    newTrackId = rawBody.trackId === null ? null : String(rawBody.trackId);
+    if (newTrackId) {
+      const track = await prisma.track.findFirst({
+        where: { id: newTrackId, eventId: project.eventId },
+      });
+      if (!track) {
+        throw new HttpError(400, "bad_request", "trackId does not belong to this event");
+      }
+    }
+  }
+
+  if (!project.title.trim() || !project.summary.trim() || !newTrackId || !project.repoUrl.trim()) {
     throw new HttpError(
       400,
       "incomplete_project",
@@ -323,6 +350,7 @@ export async function submitProject(req: Request, projectId: string) {
     data: {
       status: ProjectStatus.SUBMITTED,
       submittedAt,
+      trackId: newTrackId,
     },
     include: {
       track: { select: { id: true, name: true } },
@@ -350,7 +378,7 @@ export async function clearDuplicate(req: Request, projectId: string) {
 
   const updated = await prisma.project.update({
     where: { id: projectId },
-    data: { duplicateOfId: null },
+    data: { duplicateOfId: null, duplicateCleared: true },
     include: {
       track: { select: { id: true, name: true } },
       team: { select: { id: true, name: true } },

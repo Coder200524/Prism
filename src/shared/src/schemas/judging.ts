@@ -29,7 +29,7 @@ export const manualAssignmentBodySchema = z.object({
 
 export const scoreUpdateBodySchema = z.object({
   scores: z.record(z.number().int()),
-  comment: z.string().max(5000).optional().default(""),
+  comment: z.string().max(5000).optional(),
   submit: z.boolean().optional().default(false),
 });
 

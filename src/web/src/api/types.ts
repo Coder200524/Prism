@@ -122,6 +122,8 @@ export type Dashboard = {
     submitted: number;
     pending: number;
     percentComplete: number;
+    targetCoverage: number;
+    coveragePercent: number;
   };
   judges: Array<{
     id: string;
@@ -129,6 +131,7 @@ export type Dashboard = {
     assigned: number;
     submitted: number;
     flatScorer: boolean;
+    lowSample: boolean;
   }>;
   projects: Array<{
     id: string;

@@ -41,9 +41,8 @@ Computed on every results/dashboard/CSV read — nothing derived is stored.
 2. Global mean \(\mu_g\) and population σ \(\sigma_g\) over all submitted review totals in the event.
 3. Per judge \(j\): mean \(\mu_j\), population σ \(\sigma_j\), count \(n_j\).
 4. z-score:
-   - if \(\sigma_j = 0\) → \(z = 0\) and flag judge `flat_scorer`
-   - else if \(n_j < 3\) → \(z = (total - \mu_g) / \sigma_g\) (or 0 if \(\sigma_g = 0\)) and flag
-     `low_sample`
+   - if \(n_j < 3\) → \(z = (total - \mu_g) / \sigma_g\) (or 0 if \(\sigma_g = 0\)) and flag `low_sample`
+   - else if \(\sigma_j = 0\) → \(z = 0\) and flag judge `flat_scorer`
    - else → \(z = (total - \mu_j) / \sigma_j\)
 5. Rescale: \(\text{normalized} = \mathrm{clamp}(\mu_g + z \cdot \sigma_g,\ \text{rubricMin},\ \text{rubricMax})\).
 6. Project `raw_score` = mean of totals; `normalized_score` = mean of normalized values;

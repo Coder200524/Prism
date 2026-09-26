@@ -35,7 +35,10 @@ export function DashboardTab({ eventId }: { eventId: string }) {
         <p className="mb-3 text-sm text-slate-600">
           Updated <DateTime value={data.generatedAt} /> · refreshes every 5 seconds
         </p>
-        <ProgressBar value={data.totals.percentComplete} label="Assignments submitted" />
+        <div className="space-y-4">
+          <ProgressBar value={data.totals.percentComplete} label="Assignments submitted" />
+          <ProgressBar value={data.totals.coveragePercent} label={`Target coverage (${data.totals.targetCoverage} reviews)`} />
+        </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
           <div>
             <dt className="text-slate-500">Projects</dt>
@@ -83,8 +86,12 @@ export function DashboardTab({ eventId }: { eventId: string }) {
               {
                 key: "flat",
                 header: "Flags",
-                render: (row) =>
-                  row.flatScorer ? <Badge tone="amber">flat scorer</Badge> : null,
+                render: (row) => (
+                  <div className="flex gap-2">
+                    {row.flatScorer && <Badge tone="amber">flat scorer</Badge>}
+                    {row.lowSample && <Badge tone="amber">low sample</Badge>}
+                  </div>
+                ),
               },
             ]}
           />
