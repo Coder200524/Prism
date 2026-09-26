@@ -1,0 +1,127 @@
+# DOGFOOD Portal
+
+Self-hosted hackathon submission and judging portal. Participants form teams and submit
+projects; organizers configure events, rubrics, and judges; judges score assigned projects
+with weighted criteria and cross-judge normalization. Everything runs offline after images
+are built — no cloud APIs, CDNs, or external fonts.
+
+Claimed tiers: **T1** (events, teams, submissions, gallery) and **T2** (rubric, judging,
+normalization, results, CSV export).
+
+## One-command start
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:8080](http://localhost:8080). On first boot the app runs migrations,
+seeds `fixtures.json` plus Demo Open Hack, then serves the API and SPA on port 8080.
+
+## Demo accounts
+
+Password for all demo accounts: `dogfood-demo`
+
+| Email | Role |
+|---|---|
+| `admin@dogfood.local` | Platform ADMIN |
+| `organizer@dogfood.local` | Platform ORGANIZER (owns Demo Open Hack + fixture event) |
+| Fixture judges 1 & 2 | Event JUDGE on Sample Hack 2026 (`evt_01`) |
+| `priya1@example.org` | Fixture participant |
+
+### Demo Bearer tokens (`SEED_DEMO=true`)
+
+```
+Authorization: Bearer demo-organizer-token
+Authorization: Bearer demo-judge-a-token
+Authorization: Bearer demo-judge-b-token
+Authorization: Bearer demo-participant-token
+```
+
+## Acceptance checker
+
+```bash
+python3 run.py .dogfood.toml > acceptance-report.txt
+```
+
+(or `python` if that is your interpreter). The committed `acceptance-report.txt` should show
+all claimed T1/T2 checks as PASS.
+
+## Tests
+
+Needs a separate Postgres database. With Docker Compose the DB is also published on host
+port **5433** (so it does not collide with a local Postgres on 5432):
+
+```bash
+# once
+createdb is not needed — Docker already has dogfood_test after:
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 5433 -U postgres -c 'CREATE DATABASE dogfood_test;'
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dogfood_test \
+  npx prisma migrate deploy --schema src/server/prisma/schema.prisma
+
+TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dogfood_test npm test
+```
+
+Vitest defaults `TEST_DATABASE_URL` to that URL when unset. Suites cover unit algorithms and
+API permission / deadline / isolation / lifecycle / seed idempotency.
+
+## Features by tier
+
+### T1
+
+- Register / login (Bearer sessions)
+- Public event list and detail, gallery with URL filters
+- Create/join teams (invite links), submit projects before deadline
+- Organizer event create/settings (tracks, prizes, publish)
+- Admin user role management
+- Server-enforced deadlines via `clock.now()` + `phase.ts`
+
+### T2
+
+- Rubric editor (weights must sum to 100)
+- Judge invites (copyable links, no email)
+- Auto-assign with conflict-of-interest rules
+- Judge scoring workspace; peer scores blocked
+- Live organizer dashboard (UI polls every 5s)
+- Results with raw + normalized scores; publish to public page
+- CSV export (`results` and `scores`) with formula-injection guards
+- Event audit log
+
+## Honest limitations
+
+- **No email delivery.** Team and judge invites are copy-paste URLs only.
+- **T3 / T4 not implemented** (advanced features beyond the claimed tiers).
+- **Judging starts only after `submissionsClose`.** Demo Open Hack ships with submissions
+  open for 7 days; organizers must close submissions (settings) before judges can submit scores.
+- **Sessions are opaque Bearer tokens in `localStorage`**, not HttpOnly cookies — fine for a
+  local demo, not a hardened multi-tenant SaaS posture.
+- **Auth rate limit** is IP-based on login/register; disabled volume is raised only under
+  `NODE_ENV=test`.
+- **Normalization is computed on read** and never stored; large events recompute on each
+  results/dashboard/CSV request.
+- **Duplicate detection** is title/repo heuristics at submit time, not plagiarism analysis.
+- **One project per team** (`Project.teamId` unique).
+- Offline after build still requires the Postgres + app containers; “no network” means no
+  outbound calls from the running portal, not “no Docker host”.
+
+## Production notes
+
+- Set `SEED_DEMO=false` so demo Bearer tokens are not created.
+- Change all demo passwords (or disable demo account seeding) before any shared deployment.
+- Take regular Postgres backups of the `pgdata` volume.
+- Set a real `PUBLIC_URL` so invite links point at your host.
+- Put TLS termination in front of the container; the app itself listens on plain HTTP.
+- Do not expose Postgres ports publicly; the compose file publishes 5432/5433 for local dogfooding.
+
+## Layout
+
+```
+src/shared   Zod schemas + shared types
+src/server   Express 5 + Prisma + seed
+src/web      React 18 + Vite + TanStack Query
+tests/       Vitest unit + API suites
+fixtures.json
+docs/SPEC.md
+```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md), [DATA-MODEL.md](DATA-MODEL.md), and
+[JUDGING.md](JUDGING.md) for deeper detail.

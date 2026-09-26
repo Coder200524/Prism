@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.DS_Store
+*.md
+!docs/SPEC.md
+.env
+.env.*
+coverage
+tests
+.cursor
+PHASES.md
+src/**/dist
