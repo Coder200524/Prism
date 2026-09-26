@@ -5,8 +5,8 @@ projects; organizers configure events, rubrics, and judges; judges score assigne
 with weighted criteria and cross-judge normalization. Everything runs offline after images
 are built — no cloud APIs, CDNs, or external fonts.
 
-Claimed tiers: **T1** (events, teams, submissions, gallery) and **T2** (rubric, judging,
-normalization, results, CSV export).
+Claimed tiers: **T1** (events, teams, submissions, gallery), **T2** (rubric, judging,
+normalization, results, CSV export), and **T3** (community voting, comment system, abuse detection).
 
 ## One-command start
 
@@ -28,6 +28,7 @@ Password for all demo accounts: `dogfood-demo`
 | `organizer@dogfood.local` | Platform ORGANIZER (owns Demo Open Hack + fixture event) |
 | Fixture judges 1 & 2 | Event JUDGE on Sample Hack 2026 (`evt_01`) |
 | `priya1@example.org` | Fixture participant |
+| `voter1@dogfood.local` to `voter5@dogfood.local` | Demo voters (Community Vote Demo event) |
 
 ### Demo Bearer tokens (`SEED_DEMO=true`)
 
@@ -87,6 +88,15 @@ API permission / deadline / isolation / lifecycle / seed idempotency.
 - CSV export (`results` and `scores`) with formula-injection guards
 - Event audit log
 
+### T3
+
+- Authenticated community voting per track (1 vote per user)
+- Order bias mitigation (deterministic per-voter ballot shuffle)
+- Tally peeking mitigation (live results hidden from organizers and public until voting closes)
+- Moderated project comments (rate limited, duplicate protected, soft-deleted)
+- Organizer abuse dashboard (fraud flagging for new accounts, void/restore capabilities)
+- End-to-end audit logging for voting moderation
+
 ## Build timeline
 Planning documents (docs/SPEC.md and the build prompts) were written before kickoff, which the
 hackathon rules allow ("plan, read, sketch schemas"). No application code existed before
@@ -98,7 +108,7 @@ build. The migration folder name 20260325173000_init has a wrong date generated 
 ## Honest limitations
 
 - **No email delivery.** Team and judge invites are copy-paste URLs only.
-- **T3 / T4 not implemented** (advanced features beyond the claimed tiers).
+- **T4 not implemented** (advanced features beyond the claimed tiers).
 - **Judging starts only after `submissionsClose`.** Demo Open Hack ships with submissions
   open for 7 days; organizers must close submissions (settings) before judges can submit scores.
 - **Sessions are opaque Bearer tokens in `localStorage`**, not HttpOnly cookies — fine for a

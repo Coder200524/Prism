@@ -103,6 +103,14 @@ Three reviews, every criterion **4** → totals `[4, 4, 4]`, \(\sigma_j = 0\). E
 Only two reviews (`prj_01` total 4.33, `prj_35` total 3.35). Uses **global** μ/σ for z. Flag:
 `low_sample`.
 
+## Community Voting (Tier 3)
+
+Community voting is entirely separate from the official judge scoring workflow. 
+1. **One vote per track:** Authenticated users (not acting as organizers or judges for the event) can cast a single vote per track.
+2. **Hidden tallies:** Unlike judge dashboards, live voting tallies are strictly hidden (`403 results_hidden`) from **everyone**, including organizers, until the voting window closes (`votingClose`).
+3. **No normalized merging:** Community votes do not affect the `raw_score` or `normalized_score` produced by the judge normalization engine. The community vote determines a separate "Community Choice" ranking.
+4. **Fraud handling:** Suspect votes (e.g., from accounts created after voting opened) are flagged but still initially tallied. Organizers can review these post-close and explicitly void them. Voided votes are immediately excluded from the public final community tallies.
+
 ## Isolation
 
 Judges must not see peer scores, comments, or completion status.

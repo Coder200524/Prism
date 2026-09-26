@@ -33,6 +33,7 @@ Prisma schema: `src/server/prisma/schema.prisma`. Postgres 16.
 - IP addresses in `Vote.ipHash` are hashed to avoid storing plain PII.
 - `Criterion` delete is restricted while `CriterionScore` rows exist (`onDelete: Restrict`).
 - Removing a criterion that already has scores returns `409 criterion_in_use`.
+- `Comment` moderation uses `hiddenAt` for soft deletes to preserve the audit trail.
 
 ## Fixture mapping
 
