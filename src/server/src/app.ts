@@ -44,7 +44,7 @@ export function createApp(): Express {
 
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
-  app.use("/api/events", communityRouter);
+  app.use("/api", communityRouter);
   app.use("/api/events", eventsRouter);
   app.use("/api/teams", teamsRouter);
   app.use("/api/projects", projectsRouter);

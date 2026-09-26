@@ -22,7 +22,7 @@ const voteRateLimit = rateLimit({
 // Rate limit is applied individually after requireAuth
 
 communityRouter.get(
-  "/:eventId/ballot",
+  "/events/:eventId/ballot",
   requireAuth,
   voteRateLimit,
   async (req: Request, res: Response, next: NextFunction) => {
@@ -38,7 +38,7 @@ communityRouter.get(
 );
 
 communityRouter.post(
-  "/:eventId/votes",
+  "/events/:eventId/votes",
   requireAuth,
   voteRateLimit,
   validateBody(castVoteBodySchema),
@@ -56,7 +56,7 @@ communityRouter.post(
 );
 
 communityRouter.delete(
-  "/:eventId/votes/:trackId",
+  "/events/:eventId/votes/:trackId",
   requireAuth,
   voteRateLimit,
   async (req: Request, res: Response, next: NextFunction) => {
@@ -66,6 +66,134 @@ communityRouter.delete(
 
       await retractVote(req, eventId as string, voterId, trackId as string);
       res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+const commentMinRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  keyGenerator: (req: Request) => req.user?.id ?? "unknown",
+  handler: (_req: Request, _res: Response, next: NextFunction) => {
+    next(new HttpError(429, "rate_limit", "Too many comments, please try again later."));
+  },
+});
+
+const commentDayRateLimit = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 50,
+  keyGenerator: (req: Request) => req.user?.id ?? "unknown",
+  handler: (_req: Request, _res: Response, next: NextFunction) => {
+    next(new HttpError(429, "rate_limit", "Daily comment limit reached."));
+  },
+});
+
+import { createCommentBodySchema, hideCommentBodySchema } from "@dogfood/shared";
+import {
+  getProjectComments,
+  postComment,
+  deleteComment,
+  hideComment,
+  unhideComment,
+  getEventComments,
+} from "./comments.service.js";
+
+// GET /api/projects/:projectId/comments (public)
+communityRouter.get(
+  "/projects/:projectId/comments",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { projectId } = req.params;
+      const comments = await getProjectComments(projectId as string);
+      res.json(comments);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /api/projects/:projectId/comments (auth)
+communityRouter.post(
+  "/projects/:projectId/comments",
+  requireAuth,
+  commentMinRateLimit,
+  commentDayRateLimit,
+  validateBody(createCommentBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { projectId } = req.params;
+      const authorId = req.user!.id;
+      const { body } = req.body;
+      const result = await postComment(req, projectId as string, authorId, body);
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// DELETE /api/comments/:commentId
+communityRouter.delete(
+  "/comments/:commentId",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { commentId } = req.params;
+      const userId = req.user!.id;
+      await deleteComment(req, commentId as string, userId);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /api/comments/:commentId/hide
+communityRouter.post(
+  "/comments/:commentId/hide",
+  requireAuth,
+  validateBody(hideCommentBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { commentId } = req.params;
+      const userId = req.user!.id;
+      const { reason } = req.body;
+      await hideComment(req, commentId as string, userId, reason);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /api/comments/:commentId/unhide
+communityRouter.post(
+  "/comments/:commentId/unhide",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { commentId } = req.params;
+      const userId = req.user!.id;
+      await unhideComment(req, commentId as string, userId);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// GET /api/events/:eventId/comments (organizer)
+communityRouter.get(
+  "/events/:eventId/comments",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { eventId } = req.params;
+      const userId = req.user!.id;
+      const comments = await getEventComments(eventId as string, userId);
+      res.json(comments);
     } catch (error) {
       next(error);
     }
