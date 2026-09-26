@@ -20,6 +20,8 @@ export type Scenario = {
   criterionKeys: string[];
   assignmentAId: string;
   assignmentBId: string;
+  voteId: string;
+  commentId: string;
   admin: TestUser;
   organizer: TestUser;
   participant: TestUser;
@@ -28,35 +30,35 @@ export type Scenario = {
   outsider: TestUser;
 };
 
-export async function seedPermissionScenario(): Promise<Scenario> {
+export async function seedPermissionScenario(suffix: string = ""): Promise<Scenario> {
   const now = setFixedClock("2026-06-15T12:00:00.000Z");
   const submissionsOpen = new Date("2026-06-01T00:00:00.000Z");
   const submissionsClose = new Date("2026-06-20T00:00:00.000Z");
 
   const admin = await createUser({
-    email: "admin@test.local",
+    email: `admin${suffix}@test.local`,
     name: "Admin",
     platformRole: PlatformRole.ADMIN,
   });
   const organizer = await createUser({
-    email: "organizer@test.local",
+    email: `organizer${suffix}@test.local`,
     name: "Organizer",
     platformRole: PlatformRole.ORGANIZER,
   });
   const participant = await createUser({
-    email: "participant@test.local",
+    email: `participant${suffix}@test.local`,
     name: "Participant",
   });
   const judgeA = await createUser({
-    email: "judge-a@test.local",
+    email: `judge-a${suffix}@test.local`,
     name: "Judge A",
   });
   const judgeB = await createUser({
-    email: "judge-b@test.local",
+    email: `judge-b${suffix}@test.local`,
     name: "Judge B",
   });
   const outsider = await createUser({
-    email: "outsider@test.local",
+    email: `outsider${suffix}@test.local`,
     name: "Outsider",
   });
 
@@ -114,7 +116,7 @@ export async function seedPermissionScenario(): Promise<Scenario> {
     data: {
       eventId: event.id,
       name: "Draft Team",
-      inviteCode: "matrix-invite-code-01",
+      inviteCode: `matrix-invite-code-01${suffix}`,
     },
   });
   await prisma.teamMember.create({
@@ -137,7 +139,7 @@ export async function seedPermissionScenario(): Promise<Scenario> {
     data: {
       eventId: event.id,
       name: "Submitted Team",
-      inviteCode: "matrix-invite-code-02",
+      inviteCode: `matrix-invite-code-02${suffix}`,
     },
   });
   await prisma.teamMember.create({
@@ -174,6 +176,26 @@ export async function seedPermissionScenario(): Promise<Scenario> {
     },
   });
 
+  const vote = await prisma.vote.create({
+    data: {
+      eventId: event.id,
+      voterId: participant.id,
+      projectId: project.id,
+      trackId: track.id,
+      ipHash: "hash123",
+      userAgentHash: "ua123",
+    },
+  });
+
+  const comment = await prisma.comment.create({
+    data: {
+      eventId: event.id,
+      projectId: project.id,
+      authorId: outsider.id,
+      body: "Matrix comment",
+    },
+  });
+
   return {
     now,
     eventId: event.id,
@@ -186,6 +208,8 @@ export async function seedPermissionScenario(): Promise<Scenario> {
     criterionKeys: criteria.map((row) => row.key),
     assignmentAId: assignmentA.id,
     assignmentBId: assignmentB.id,
+    voteId: vote.id,
+    commentId: comment.id,
     admin,
     organizer,
     participant,

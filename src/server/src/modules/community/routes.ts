@@ -2,9 +2,11 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import rateLimit from "express-rate-limit";
 import { castVoteBodySchema } from "@dogfood/shared";
 import { HttpError } from "../../lib/http-error.js";
-import { requireAuth } from "../../middleware/authorize.js";
+import { requireAuth, requireEventRole } from "../../middleware/authorize.js";
 import { validateBody } from "../../middleware/validate.js";
-import { castVote, getBallot, retractVote } from "./voting.service.js";
+import { castVote, getBallot, retractVote, getCommunityResults, getCommunityTurnout, getFlaggedVotes, voidVote, restoreVote } from "./voting.service.js";
+import { EventRoleType } from "@prisma/client";
+import { voidVoteBodySchema } from "@dogfood/shared";
 
 export const communityRouter = Router();
 
@@ -199,3 +201,79 @@ communityRouter.get(
     }
   },
 );
+
+
+
+// GET /api/events/:eventId/community-results
+communityRouter.get(
+  "/events/:eventId/community-results",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const results = await getCommunityResults(req.params.eventId as string);
+      res.json(results);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/events/:eventId/community-turnout
+communityRouter.get(
+  "/events/:eventId/community-turnout",
+  requireAuth,
+  requireEventRole(EventRoleType.ORGANIZER, (req) => req.params.eventId as string),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const turnout = await getCommunityTurnout(req.params.eventId as string);
+      res.json(turnout);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/events/:eventId/votes/flagged
+communityRouter.get(
+  "/events/:eventId/votes/flagged",
+  requireAuth,
+  requireEventRole(EventRoleType.ORGANIZER, (req) => req.params.eventId as string),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const flagged = await getFlaggedVotes(req.params.eventId as string);
+      res.json(flagged);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/votes/:voteId/void
+communityRouter.post(
+  "/votes/:voteId/void",
+  requireAuth,
+  validateBody(voidVoteBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await voidVote(req, req.params.voteId as string, req.body.reason, req.user!.id);
+      res.sendStatus(200);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/votes/:voteId/restore
+communityRouter.post(
+  "/votes/:voteId/restore",
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await restoreVote(req, req.params.voteId as string, req.user!.id);
+      res.sendStatus(200);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+

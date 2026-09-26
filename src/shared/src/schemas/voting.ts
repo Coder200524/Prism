@@ -5,3 +5,9 @@ export const castVoteBodySchema = z.object({
 });
 
 export type CastVoteBody = z.infer<typeof castVoteBodySchema>;
+
+export const voidVoteBodySchema = z.object({
+  reason: z.string().min(1).max(1000),
+});
+
+export type VoidVoteBody = z.infer<typeof voidVoteBodySchema>;

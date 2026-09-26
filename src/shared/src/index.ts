@@ -60,6 +60,6 @@ export {
   type ScoreUpdateBody,
 } from "./schemas/judging.js";
 
-export { castVoteBodySchema, type CastVoteBody } from "./schemas/voting.js";
+export { castVoteBodySchema, voidVoteBodySchema, type CastVoteBody } from "./schemas/voting.js";
 
 export { createCommentBodySchema, hideCommentBodySchema } from "./schemas/comments.js";

@@ -8,8 +8,8 @@ describe("api/community/comments", () => {
   let sc: Scenario;
 
   beforeEach(async () => {
-    await resetDatabase();
-    sc = await seedPermissionScenario();
+    sc = await seedPermissionScenario(`-comments-${Date.now()}-${Math.random()}`);
+    await prisma.comment.deleteMany({ where: { projectId: sc.projectId } });
   });
 
   it("public list works and hides hidden comments", async () => {
