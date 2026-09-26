@@ -9,6 +9,48 @@ import { EmptyState } from "../../components/EmptyState";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { DateTime } from "../../lib/datetime";
 
+function VotingCard({ eventId, votingOpen, votingClose }: { eventId: string; votingOpen: string; votingClose: string }) {
+  const now = new Date();
+  const opens = new Date(votingOpen);
+  const closes = new Date(votingClose);
+  const isOpen = now >= opens && now < closes;
+  const isClosed = now >= closes;
+
+  return (
+    <Card title="Community voting">
+      <div className="space-y-2 text-sm text-slate-600">
+        <p>
+          Opens: <DateTime value={votingOpen} />
+        </p>
+        <p>
+          Closes: <DateTime value={votingClose} />
+        </p>
+        {isOpen ? (
+          <>
+            <Countdown to={votingClose} label="Voting closes in" />
+            <div className="pt-2">
+              <Link to={`/events/${eventId}/vote`}>
+                <Button>Vote now</Button>
+              </Link>
+            </div>
+          </>
+        ) : isClosed ? (
+          <>
+            <p className="font-medium text-slate-700">Voting closed</p>
+            <Link to={`/events/${eventId}/community-results`} className="text-indigo-600 hover:underline">
+              View community results
+            </Link>
+          </>
+        ) : (
+          <p className="font-medium text-slate-700">
+            Opens <DateTime value={votingOpen} />
+          </p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function EventPage() {
   const { eventId } = useParams();
   const { isAuthenticated, hasEventRole, hasPlatformRole } = useAuth();
@@ -20,6 +62,7 @@ export function EventPage() {
   if (!event) return <EmptyState title="Event not found" />;
 
   const canOrganize = hasPlatformRole("ADMIN") || hasEventRole("ORGANIZER", event.id);
+  const hasVoting = Boolean(event.votingOpen && event.votingClose);
 
   return (
     <div className="space-y-6">
@@ -64,6 +107,10 @@ export function EventPage() {
           <Countdown to={event.submissionsClose} label="Time left" />
         </div>
       </Card>
+
+      {hasVoting ? (
+        <VotingCard eventId={event.id} votingOpen={event.votingOpen!} votingClose={event.votingClose!} />
+      ) : null}
 
       <Card title="Tracks">
         {event.tracks.length === 0 ? (

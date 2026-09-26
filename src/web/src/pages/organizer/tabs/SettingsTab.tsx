@@ -14,7 +14,8 @@ import { ErrorMessage } from "../../../components/ErrorMessage";
 import { Input } from "../../../components/Input";
 import { Textarea } from "../../../components/Textarea";
 
-function toLocalInput(iso: string): string {
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
   const date = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -33,9 +34,12 @@ export function SettingsTab({ eventId }: { eventId: string }) {
   const [description, setDescription] = useState("");
   const [submissionsOpen, setSubmissionsOpen] = useState("");
   const [submissionsClose, setSubmissionsClose] = useState("");
+  const [votingOpen, setVotingOpen] = useState("");
+  const [votingClose, setVotingClose] = useState("");
   const [trackName, setTrackName] = useState("");
   const [prizeName, setPrizeName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [votingError, setVotingError] = useState<string | null>(null);
 
   useEffect(() => {
     const event = eventQuery.data?.event;
@@ -44,6 +48,8 @@ export function SettingsTab({ eventId }: { eventId: string }) {
     setDescription(event.description);
     setSubmissionsOpen(toLocalInput(event.submissionsOpen));
     setSubmissionsClose(toLocalInput(event.submissionsClose));
+    setVotingOpen(toLocalInput(event.votingOpen));
+    setVotingClose(toLocalInput(event.votingClose));
   }, [eventQuery.data]);
 
   if (eventQuery.isLoading) return <p className="text-slate-600">Loading settings…</p>;
@@ -51,14 +57,35 @@ export function SettingsTab({ eventId }: { eventId: string }) {
   const event = eventQuery.data?.event;
   if (!event) return null;
 
+  function validateVoting(): string | null {
+    if (votingOpen && !votingClose) return "Both voting open and close must be set.";
+    if (!votingOpen && votingClose) return "Both voting open and close must be set.";
+    if (votingOpen && votingClose) {
+      const vo = new Date(votingOpen);
+      const vc = new Date(votingClose);
+      const sc = new Date(submissionsClose);
+      if (vo >= vc) return "Voting open must be before voting close.";
+      if (sc > vo) return "Voting open must be on or after submissions close.";
+    }
+    return null;
+  }
+
   async function onSave(formEvent: FormEvent) {
     formEvent.preventDefault();
     setMessage(null);
+    setVotingError(null);
+    const vErr = validateVoting();
+    if (vErr) {
+      setVotingError(vErr);
+      return;
+    }
     await updateEvent.mutateAsync({
       name,
       description,
       submissionsOpen: new Date(submissionsOpen).toISOString(),
       submissionsClose: new Date(submissionsClose).toISOString(),
+      votingOpen: votingOpen ? new Date(votingOpen).toISOString() : null,
+      votingClose: votingClose ? new Date(votingClose).toISOString() : null,
     });
     setMessage("Settings saved.");
   }
@@ -87,6 +114,31 @@ export function SettingsTab({ eventId }: { eventId: string }) {
             onChange={(e) => setSubmissionsClose(e.target.value)}
             required
           />
+          <div className="rounded border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-medium text-slate-700">
+              Community voting (optional)
+            </p>
+            <div className="space-y-3">
+              <Input
+                label="Voting opens"
+                type="datetime-local"
+                value={votingOpen}
+                onChange={(e) => setVotingOpen(e.target.value)}
+              />
+              <Input
+                label="Voting closes"
+                type="datetime-local"
+                value={votingClose}
+                onChange={(e) => setVotingClose(e.target.value)}
+              />
+              {votingError ? (
+                <p className="text-sm text-red-600">{votingError}</p>
+              ) : null}
+              <p className="text-xs text-slate-500">
+                Leave both blank to disable community voting. Voting open must be on or after submissions close.
+              </p>
+            </div>
+          </div>
           {updateEvent.isError ? <ErrorMessage error={updateEvent.error} /> : null}
           {message ? <p className="text-sm text-green-700">{message}</p> : null}
           <Button type="submit" disabled={updateEvent.isPending}>
