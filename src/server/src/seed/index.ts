@@ -391,6 +391,16 @@ async function seedDemoAccounts(
   });
   await upsertEventRole(organizer.id, fixtureEventId, EventRoleType.ORGANIZER);
 
+  for (let i = 1; i <= 5; i++) {
+    await upsertUser({
+      id: `usr_demo_voter${i}`,
+      email: `voter${i}@dogfood.local`,
+      name: `Demo Voter ${i}`,
+      passwordHash,
+      platformRole: PlatformRole.USER,
+    });
+  }
+
   return {
     adminId: admin.id,
     organizerId: organizer.id,
@@ -492,6 +502,79 @@ async function seedDemoOpenHack(organizerId: string, seedTime: Date): Promise<vo
   }
 }
 
+async function seedCommunityVoteDemo(organizerId: string, seedTime: Date): Promise<void> {
+  const EVENT_ID = "evt_vote_demo";
+  const submissionsClose = new Date(seedTime.getTime() - 1 * MS_PER_DAY);
+  const votingOpen = new Date(seedTime.getTime() - 1 * MS_PER_DAY);
+  const votingClose = new Date(seedTime.getTime() + 7 * MS_PER_DAY);
+  
+  await prisma.event.upsert({
+    where: { id: EVENT_ID },
+    create: {
+      id: EVENT_ID,
+      name: "Community Vote Demo",
+      description: "Live demo event with voting open for 7 days.",
+      submissionsOpen: new Date(seedTime.getTime() - 7 * MS_PER_DAY),
+      submissionsClose,
+      votingOpen,
+      votingClose,
+      publishedAt: seedTime,
+      maxTeamSize: 4,
+      reviewsPerProject: 3,
+    },
+    update: {},
+  });
+
+  await upsertEventRole(organizerId, EVENT_ID, EventRoleType.ORGANIZER);
+
+  const tracks = [
+    { id: "trk_vote_t1", name: "Track 1" },
+    { id: "trk_vote_t2", name: "Track 2" },
+  ];
+  for (const track of tracks) {
+    await prisma.track.upsert({
+      where: { id: track.id },
+      create: {
+        id: track.id,
+        eventId: EVENT_ID,
+        name: track.name,
+      },
+      update: {},
+    });
+  }
+
+  for (let i = 1; i <= 6; i++) {
+    const teamId = `tm_vote_demo_${i}`;
+    const projectId = `prj_vote_demo_${i}`;
+    await prisma.team.upsert({
+      where: { id: teamId },
+      create: {
+        id: teamId,
+        eventId: EVENT_ID,
+        name: `Demo Team ${i}`,
+        inviteCode: generateToken(16),
+      },
+      update: {},
+    });
+
+    await prisma.project.upsert({
+      where: { id: projectId },
+      create: {
+        id: projectId,
+        eventId: EVENT_ID,
+        teamId,
+        trackId: tracks[i % 2]!.id,
+        title: `Demo Project ${i}`,
+        summary: `A cool project for voting demo.`,
+        repoUrl: `https://example.com/demo-project-${i}`,
+        status: ProjectStatus.SUBMITTED,
+        submittedAt: new Date(submissionsClose.getTime() - 1000 * i),
+      },
+      update: {},
+    });
+  }
+}
+
 function printSummary(input: {
   publicUrl: string;
   seedDemo: boolean;
@@ -516,6 +599,7 @@ function printSummary(input: {
     "│   organizer@dogfood.local    ORGANIZER                     │",
     "│   judge A / judge B          fixture judges 1 & 2          │",
     `│   participant                ${input.participantEmail}`.padEnd(61) + `│`,
+    "│   voter1 ... voter5          voter1@dogfood.local etc      │",
     "│                                                            │",
     ...(input.seedDemo
       ? [
@@ -534,6 +618,7 @@ function printSummary(input: {
     `│   tracks=${String(input.counts.tracks).padEnd(4)} judges=${String(input.counts.judges).padEnd(4)} teams=${String(input.counts.teams).padEnd(4)}`.padEnd(61) + `│`,
     `│   projects=${String(input.counts.projects).padEnd(3)} scores=${String(input.counts.scores).padEnd(4)} criteria=${String(input.counts.criteria).padEnd(2)} dups=${String(input.counts.duplicates).padEnd(2)}`.padEnd(61) + `│`,
     "│ Also seeded: Demo Open Hack (evt_demo)                     │",
+    "│              Community Vote Demo (evt_vote_demo)           │",
     "└────────────────────────────────────────────────────────────┘",
   ];
   console.log(lines.join("\n"));
@@ -559,6 +644,7 @@ export async function runSeed(options?: {
   );
   await seedDemoSessions(seedDemo, accounts, seedTime);
   await seedDemoOpenHack(accounts.organizerId, seedTime);
+  await seedCommunityVoteDemo(accounts.organizerId, seedTime);
 
   printSummary({
     publicUrl,

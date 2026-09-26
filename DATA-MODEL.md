@@ -21,12 +21,16 @@ Prisma schema: `src/server/prisma/schema.prisma`. Postgres 16.
 | **Assignment** | Judge ↔ project review slot. Unique `(judgeId, projectId)`. Status `PENDING` / `SUBMITTED`. |
 | **CriterionScore** | Integer score for one criterion on one assignment. PK `(assignmentId, criterionId)`. |
 | **AuditLog** | Append-only trail of state changes (`action`, actor, event, target, JSON `data`). |
+| **Vote** | Community vote. Unique `(eventId, voterId, trackId)`. `ipHash` prevents storing raw PII. |
+| **Comment** | Community comment on a project. |
 
 ## Important constraints
 
 - `TeamMember @@unique([eventId, userId])` — cannot join two teams in the same event.
 - `Project.teamId @unique` — cannot create a second project for a team.
 - `Assignment @@unique([judgeId, projectId])` — one review slot per judge/project pair.
+- `Vote @@unique([eventId, voterId, trackId])` — one vote per voter per track.
+- IP addresses in `Vote.ipHash` are hashed to avoid storing plain PII.
 - `Criterion` delete is restricted while `CriterionScore` rows exist (`onDelete: Restrict`).
 - Removing a criterion that already has scores returns `409 criterion_in_use`.
 

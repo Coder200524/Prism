@@ -44,6 +44,8 @@ model User {
   assignments  Assignment[]
   judgeTracks  JudgeTrack[]
   auditEntries AuditLog[]
+  votes        Vote[]
+  comments     Comment[]
 }
 
 model Session {
@@ -64,6 +66,8 @@ model Event {
   submissionsOpen    DateTime
   submissionsClose   DateTime
   judgingClose       DateTime?
+  votingOpen         DateTime?
+  votingClose        DateTime?
   publishedAt        DateTime?
   resultsPublishedAt DateTime?
   maxTeamSize        Int       @default(4)
@@ -81,6 +85,8 @@ model Event {
   judgeInvites JudgeInvite[]
   judgeTracks  JudgeTrack[]
   auditEntries AuditLog[]
+  votes        Vote[]
+  comments     Comment[]
 }
 
 model Track {
@@ -93,6 +99,7 @@ model Track {
   prizes      Prize[]
   projects    Project[]
   judgeTracks JudgeTrack[]
+  votes       Vote[]
 
   @@unique([eventId, name])
 }
@@ -201,6 +208,8 @@ model Project {
   duplicates    Project[]     @relation("Duplicates")
 
   assignments Assignment[]
+  votes       Vote[]
+  comments    Comment[]
 
   @@index([eventId, status])
   @@index([eventId, trackId])
@@ -267,4 +276,48 @@ model AuditLog {
   event      Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, at])
+}
+
+model Vote {
+  id            String    @id @default(cuid())
+  eventId       String
+  voterId       String
+  projectId     String
+  trackId       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  ipHash        String
+  userAgentHash String
+  flagged       Boolean   @default(false)
+  flagReasons   String[]
+  voidedAt      DateTime?
+  voidedById    String?
+  voidReason    String    @default("")
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  voter   User    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  track   Track   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, voterId, trackId])
+  @@index([eventId, projectId])
+  @@index([eventId, ipHash])
+}
+
+model Comment {
+  id           String    @id @default(cuid())
+  projectId    String
+  authorId     String
+  eventId      String
+  body         String
+  createdAt    DateTime  @default(now())
+  hiddenAt     DateTime?
+  hiddenById   String?
+  hiddenReason String    @default("")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
 }

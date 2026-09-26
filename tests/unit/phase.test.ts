@@ -3,6 +3,9 @@ import {
   judgingOpen,
   phase,
   submissionsOpen,
+  votingEnabled,
+  votingOpen,
+  votingClosed,
   type EventPhaseFields,
 } from "../../src/server/src/modules/events/phase";
 
@@ -13,6 +16,8 @@ function event(overrides: Partial<EventPhaseFields> = {}): EventPhaseFields {
     submissionsClose: new Date("2026-03-01T00:00:00.000Z"),
     judgingClose: null,
     resultsPublishedAt: null,
+    votingOpen: null,
+    votingClose: null,
     ...overrides,
   };
 }
@@ -49,5 +54,29 @@ describe("phase helpers", () => {
         new Date("2026-03-15"),
       ),
     ).toBe(false);
+  });
+
+  it("correctly identifies voting windows", () => {
+    const withoutVoting = event();
+    expect(votingEnabled(withoutVoting)).toBe(false);
+    expect(votingOpen(withoutVoting, new Date("2026-04-15"))).toBe(false);
+    expect(votingClosed(withoutVoting, new Date("2026-04-15"))).toBe(false);
+
+    const withVoting = event({
+      votingOpen: new Date("2026-04-01T00:00:00.000Z"),
+      votingClose: new Date("2026-05-01T00:00:00.000Z"),
+    });
+
+    expect(votingEnabled(withVoting)).toBe(true);
+    
+    // exact boundaries
+    expect(votingOpen(withVoting, new Date("2026-03-31T23:59:59.999Z"))).toBe(false);
+    expect(votingOpen(withVoting, new Date("2026-04-01T00:00:00.000Z"))).toBe(true);
+    expect(votingOpen(withVoting, new Date("2026-04-15T00:00:00.000Z"))).toBe(true);
+    expect(votingOpen(withVoting, new Date("2026-05-01T00:00:00.000Z"))).toBe(false);
+
+    expect(votingClosed(withVoting, new Date("2026-04-30T23:59:59.999Z"))).toBe(false);
+    expect(votingClosed(withVoting, new Date("2026-05-01T00:00:00.000Z"))).toBe(true);
+    expect(votingClosed(withVoting, new Date("2026-06-01T00:00:00.000Z"))).toBe(true);
   });
 });
