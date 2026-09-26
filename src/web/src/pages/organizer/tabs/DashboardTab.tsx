@@ -86,8 +86,12 @@ export function DashboardTab({ eventId }: { eventId: string }) {
               {
                 key: "flat",
                 header: "Flags",
-                render: (row) =>
-                  row.flatScorer ? <Badge tone="amber">flat scorer</Badge> : null,
+                render: (row) => (
+                  <div className="flex gap-2">
+                    {row.flatScorer && <Badge tone="amber">flat scorer</Badge>}
+                    {row.lowSample && <Badge tone="amber">low sample</Badge>}
+                  </div>
+                ),
               },
             ]}
           />

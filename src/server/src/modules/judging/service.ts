@@ -1075,6 +1075,16 @@ export async function getDashboard(eventId: string) {
       message: `${judge?.user.name ?? judgeId} gave identical scores`,
     });
   }
+  for (const judge of judges) {
+    const submittedCount = judge.user.assignments.filter((a) => a.status === "SUBMITTED").length;
+    if (submittedCount < 3) {
+      flags.push({
+        type: "low_sample",
+        targetId: judge.user.id,
+        message: `${judge.user.name ?? judge.user.id} has only ${submittedCount} submitted reviews`,
+      });
+    }
+  }
   for (const project of normalized.projects) {
     if (project.flags.includes("under_reviewed")) {
       flags.push({
@@ -1109,13 +1119,17 @@ export async function getDashboard(eventId: string) {
       pending,
       percentComplete: Math.round(percentComplete * 10) / 10,
     },
-    judges: judges.map((row) => ({
-      id: row.user.id,
-      name: row.user.name,
-      assigned: row.user.assignments.length,
-      submitted: row.user.assignments.filter((a) => a.status === "SUBMITTED").length,
-      flatScorer: normalized.flatScorerJudgeIds.includes(row.user.id),
-    })),
+    judges: judges.map((row) => {
+      const submitted = row.user.assignments.filter((a) => a.status === "SUBMITTED").length;
+      return {
+        id: row.user.id,
+        name: row.user.name,
+        assigned: row.user.assignments.length,
+        submitted,
+        flatScorer: normalized.flatScorerJudgeIds.includes(row.user.id),
+        lowSample: submitted < 3,
+      };
+    }),
     projects: data.projects.map((project) => {
       const counts = assignedByProject.get(project.id) ?? { assigned: 0, submitted: 0 };
       return {

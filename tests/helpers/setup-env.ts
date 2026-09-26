@@ -12,7 +12,15 @@ if (process.env.VITEST_POOL_ID) {
   const url = new URL(process.env.TEST_DATABASE_URL);
   url.searchParams.set("schema", schema);
   process.env.DATABASE_URL = url.toString();
-  execSync("npx prisma db push --schema=src/server/prisma/schema.prisma --skip-generate", { stdio: "ignore", env: { ...process.env, DATABASE_URL: url.toString() } });
+  for (let i = 0; i < 3; i++) {
+    try {
+      execSync("npx prisma db push --schema=src/server/prisma/schema.prisma --skip-generate", { stdio: "ignore", env: { ...process.env, DATABASE_URL: url.toString() } });
+      break;
+    } catch (e) {
+      if (i === 2) throw e;
+      execSync(`node -e "setTimeout(()=>{}, ${Math.floor(Math.random() * 1000) + 500})"`);
+    }
+  }
 } else {
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 }

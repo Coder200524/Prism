@@ -131,6 +131,7 @@ export type Dashboard = {
     assigned: number;
     submitted: number;
     flatScorer: boolean;
+    lowSample: boolean;
   }>;
   projects: Array<{
     id: string;

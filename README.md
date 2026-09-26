@@ -103,6 +103,8 @@ API permission / deadline / isolation / lifecycle / seed idempotency.
 - **One project per team** (`Project.teamId` unique).
 - Offline after build still requires the Postgres + app containers; “no network” means no
   outbound calls from the running portal, not “no Docker host”.
+- **Postgres is exposed on host port 5433** for local testing. In production, you should
+  remove the `ports: - "5433:5432"` mapping from `docker-compose.yml` to prevent external access.
 
 ## Production notes
 
