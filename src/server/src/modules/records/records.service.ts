@@ -307,3 +307,242 @@ export async function getUserRecords(userId: string) {
     revokedReason: r.revokedReason,
   }));
 }
+
+export async function getUserCertificates(userId: string) {
+  const records = await prisma.record.findMany({
+    where: {
+      subjectUserId: userId,
+      type: { in: ["participant_certificate", "judge_certificate"] },
+    },
+    orderBy: { issuedAt: "desc" },
+  });
+
+  return records.map((r) => ({
+    id: r.id,
+    type: r.type,
+    eventId: r.eventId,
+    subjectUserId: r.subjectUserId,
+    payload: r.payload,
+    payloadHash: r.payloadHash,
+    signature: r.signature,
+    kid: r.kid,
+    issuedAt: r.issuedAt.toISOString(),
+    revokedAt: r.revokedAt?.toISOString() ?? null,
+    revokedReason: r.revokedReason,
+  }));
+}
+
+export async function getEventCertificates(eventId: string) {
+  const records = await prisma.record.findMany({
+    where: {
+      eventId,
+      type: { in: ["participant_certificate", "judge_certificate"] },
+    },
+    orderBy: { issuedAt: "desc" },
+  });
+
+  return records.map((r) => ({
+    id: r.id,
+    type: r.type,
+    eventId: r.eventId,
+    subjectUserId: r.subjectUserId,
+    payload: r.payload,
+    payloadHash: r.payloadHash,
+    signature: r.signature,
+    kid: r.kid,
+    issuedAt: r.issuedAt.toISOString(),
+    revokedAt: r.revokedAt?.toISOString() ?? null,
+    revokedReason: r.revokedReason,
+  }));
+}
+
+export async function issueCertificates(eventId: string, req?: Request) {
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!event) {
+    throw notFound("Event not found");
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { eventId, status: "SUBMITTED", duplicateOfId: null },
+    include: {
+      team: {
+        include: {
+          members: {
+            include: { user: { select: { id: true, name: true } } },
+          },
+        },
+      },
+      track: { select: { id: true, name: true } },
+    },
+  });
+
+  const normalizedProjectsMap = new Map<string, number>();
+  if (event.resultsPublishedAt) {
+    const { loadEventNormData } = await import("../judging/service.js");
+    const { normalizeScores } = await import("../judging/normalization.js");
+    const { buildNormalizationInput } = await import("../judging/results.js");
+
+    const normData = await loadEventNormData(eventId);
+    const normalized = normalizeScores(
+      buildNormalizationInput({
+        criteria: normData.criteria,
+        assignments: normData.assignments,
+        projects: normData.projects,
+        reviewsPerProject: normData.event.reviewsPerProject,
+      }),
+    );
+    for (const p of normalized.projects) {
+      if (p.rank !== null) {
+        normalizedProjectsMap.set(p.id, p.rank);
+      }
+    }
+  }
+
+  const activeKey = await getActiveSigningKey();
+  const decryptedPrivateKey = decryptPrivateKey(
+    activeKey.privateKey,
+    config.SIGNING_KEY_SECRET,
+  );
+
+  const issuedRecords = [];
+
+  // 1. Participant certificates
+  for (const project of projects) {
+    const rank = normalizedProjectsMap.get(project.id);
+    let placement: string | null = null;
+    if (event.resultsPublishedAt) {
+      if (rank === 1) placement = `1st place${project.track ? ` — ${project.track.name}` : ""}`;
+      else if (rank === 2) placement = `2nd place${project.track ? ` — ${project.track.name}` : ""}`;
+      else if (rank === 3) placement = `3rd place${project.track ? ` — ${project.track.name}` : ""}`;
+      else placement = "Participant";
+    }
+
+    for (const member of project.team.members) {
+      const subjectUserId = member.user.id;
+      const existing = await prisma.record.findFirst({
+        where: { eventId, subjectUserId, type: "participant_certificate" },
+      });
+      if (existing) {
+        issuedRecords.push(existing);
+        continue;
+      }
+
+      const recordId = `rec_${crypto.randomBytes(12).toString("hex")}`;
+      const issuedAt = clock.now();
+      const payload = {
+        id: recordId,
+        type: "participant_certificate",
+        eventId,
+        eventName: event.name,
+        participantId: subjectUserId,
+        participantName: member.user.name,
+        teamId: project.team.id,
+        teamName: project.team.name,
+        projectId: project.id,
+        projectTitle: project.title,
+        trackId: project.trackId,
+        trackName: project.track?.name ?? null,
+        placement,
+        issuer: `DOGFOOD portal at ${config.PUBLIC_URL}`,
+        issuedAt: issuedAt.toISOString(),
+      };
+
+      const canonicalJson = canonicalize(payload);
+      const payloadHash = hashPayload(canonicalJson);
+      const signature = signCanonicalPayload(canonicalJson, decryptedPrivateKey);
+
+      const record = await prisma.record.create({
+        data: {
+          id: recordId,
+          type: "participant_certificate",
+          eventId,
+          subjectUserId,
+          payload,
+          payloadHash,
+          signature,
+          kid: activeKey.id,
+          issuedAt,
+        },
+      });
+
+      if (req) {
+        await audit(
+          req,
+          "record.issue",
+          { type: "record", id: recordId, eventId },
+          { subjectUserId, type: "participant_certificate" },
+        );
+      }
+      issuedRecords.push(record);
+    }
+  }
+
+  // 2. Judge certificates
+  const assignments = await prisma.assignment.findMany({
+    where: { eventId, status: "SUBMITTED" },
+    include: { judge: { select: { id: true, name: true } } },
+  });
+
+  const judgeReviewCounts = new Map<string, { judgeName: string; count: number }>();
+  for (const a of assignments) {
+    const cur = judgeReviewCounts.get(a.judgeId) ?? { judgeName: a.judge.name, count: 0 };
+    cur.count += 1;
+    judgeReviewCounts.set(a.judgeId, cur);
+  }
+
+  for (const [judgeId, data] of judgeReviewCounts.entries()) {
+    if (data.count === 0) continue;
+
+    const existing = await prisma.record.findFirst({
+      where: { eventId, subjectUserId: judgeId, type: "judge_certificate" },
+    });
+    if (existing) {
+      issuedRecords.push(existing);
+      continue;
+    }
+
+    const recordId = `rec_${crypto.randomBytes(12).toString("hex")}`;
+    const issuedAt = clock.now();
+    const payload = {
+      id: recordId,
+      type: "judge_certificate",
+      eventId,
+      eventName: event.name,
+      judgeId,
+      judgeName: data.judgeName,
+      reviewsCount: data.count,
+      issuer: `DOGFOOD portal at ${config.PUBLIC_URL}`,
+      issuedAt: issuedAt.toISOString(),
+    };
+
+    const canonicalJson = canonicalize(payload);
+    const payloadHash = hashPayload(canonicalJson);
+    const signature = signCanonicalPayload(canonicalJson, decryptedPrivateKey);
+
+    const record = await prisma.record.create({
+      data: {
+        id: recordId,
+        type: "judge_certificate",
+        eventId,
+        subjectUserId: judgeId,
+        payload,
+        payloadHash,
+        signature,
+        kid: activeKey.id,
+        issuedAt,
+      },
+    });
+
+    if (req) {
+      await audit(
+        req,
+        "record.issue",
+        { type: "record", id: recordId, eventId },
+        { subjectUserId: judgeId, type: "judge_certificate" },
+      );
+    }
+    issuedRecords.push(record);
+  }
+
+  return issuedRecords;
+}

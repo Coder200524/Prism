@@ -37,6 +37,11 @@ recordsRouter.get("/me/records", requireAuth, async (req, res) => {
   res.status(200).json({ records: result });
 });
 
+recordsRouter.get("/me/certificates", requireAuth, async (req, res) => {
+  const certificates = await recordsService.getUserCertificates((req.user as { id: string }).id);
+  res.status(200).json({ certificates });
+});
+
 recordsRouter.post(
   "/:id/revoke",
   requireAuth,
@@ -80,6 +85,31 @@ export function mountRecordsOnEvents(eventsRouter: Router): void {
     requireEventRole("ORGANIZER", (req) => req.params.eventId as string),
     async (req, res) => {
       const records = await recordsService.issueJudgeParticipationRecords(
+        req.params.eventId as string,
+        req,
+      );
+      res.status(200).json({ issuedCount: records.length, records });
+    },
+  );
+
+  eventsRouter.get(
+    "/:eventId/certificates",
+    requireAuth,
+    requireEventRole("ORGANIZER", (req) => req.params.eventId as string),
+    async (req, res) => {
+      const certificates = await recordsService.getEventCertificates(
+        req.params.eventId as string,
+      );
+      res.status(200).json({ certificates });
+    },
+  );
+
+  eventsRouter.post(
+    "/:eventId/certificates/issue",
+    requireAuth,
+    requireEventRole("ORGANIZER", (req) => req.params.eventId as string),
+    async (req, res) => {
+      const records = await recordsService.issueCertificates(
         req.params.eventId as string,
         req,
       );

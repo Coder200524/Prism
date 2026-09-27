@@ -22,6 +22,9 @@ import { ProjectPage } from "./pages/public/ProjectPage";
 import { RegisterPage } from "./pages/public/Register";
 import { ResultsPage } from "./pages/public/Results";
 import { VotePage } from "./pages/public/VotePage";
+import { CertificatePage } from "./pages/public/CertificatePage";
+import { VerifyRecordPage } from "./pages/public/VerifyRecordPage";
+import { MyCertificatesPage } from "./pages/participant/MyCertificates";
 
 export function App() {
   return (
@@ -41,6 +44,9 @@ export function App() {
         <Route path="teams/:teamId/project" element={<SubmitProjectPage />} />
         <Route path="events/:eventId/team/new" element={<CreateTeamPage />} />
         <Route path="join/:code" element={<JoinTeamPage />} />
+        <Route path="certificates" element={<MyCertificatesPage />} />
+        <Route path="certificates/:recordId" element={<CertificatePage />} />
+        <Route path="verify/:recordId" element={<VerifyRecordPage />} />
         <Route path="organize" element={<OrganizerHomePage />} />
         <Route path="organize/new" element={<EventFormPage />} />
         <Route path="organize/:eventId" element={<EventManagePage />} />

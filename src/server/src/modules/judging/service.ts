@@ -42,7 +42,7 @@ async function loadEventOrThrow(eventId: string) {
   return event;
 }
 
-async function loadEventNormData(eventId: string) {
+export async function loadEventNormData(eventId: string) {
   const event = await loadEventOrThrow(eventId);
   const [criteria, projects, assignments, tracks] = await Promise.all([
     prisma.criterion.findMany({
@@ -901,7 +901,10 @@ export async function getResults(req: Request, eventId: string) {
     : { results: publicResultsView(normalized, extras), published: true };
 }
 
-import { issueJudgeParticipationRecords } from "../records/records.service.js";
+import {
+  issueCertificates,
+  issueJudgeParticipationRecords,
+} from "../records/records.service.js";
 
 export async function publishResults(req: Request, eventId: string) {
   await loadEventOrThrow(eventId);
@@ -911,6 +914,7 @@ export async function publishResults(req: Request, eventId: string) {
   });
   await audit(req, "results.publish", { type: "event", id: eventId, eventId });
   await issueJudgeParticipationRecords(eventId, req);
+  await issueCertificates(eventId, req);
   return { resultsPublishedAt: event.resultsPublishedAt?.toISOString() ?? null };
 }
 
