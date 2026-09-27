@@ -6,14 +6,14 @@ import { useRecord } from "../../api/hooks/records";
 export function CertificatePage() {
   const { recordId } = useParams<{ recordId: string }>();
   const { data, isLoading, isError, error } = useRecord(recordId ?? "");
-  const [qrSvg, setQrSvg] = useState<string>("");
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   const verifyUrl = `${window.location.origin}/verify/${recordId}`;
 
   useEffect(() => {
     if (recordId) {
-      QRCode.toString(verifyUrl, { type: "svg", margin: 1 })
-        .then((svg) => setQrSvg(svg))
+      QRCode.toDataURL(verifyUrl, { margin: 1, width: 120 })
+        .then((url) => setQrDataUrl(url))
         .catch((err) => console.error("QR Code error", err));
     }
   }, [recordId, verifyUrl]);
@@ -139,10 +139,11 @@ export function CertificatePage() {
             </div>
 
             <div className="flex items-center space-x-4">
-              {qrSvg && (
-                <div
+              {qrDataUrl && (
+                <img
+                  src={qrDataUrl}
+                  alt="Verification QR Code"
                   className="h-20 w-20 rounded border border-stone-200 bg-white p-1"
-                  dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               )}
               <div className="text-right">

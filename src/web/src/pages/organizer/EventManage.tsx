@@ -10,6 +10,9 @@ import { JudgesTab } from "./tabs/JudgesTab";
 import { ResultsTab } from "./tabs/ResultsTab";
 import { RubricTab } from "./tabs/RubricTab";
 import { SettingsTab } from "./tabs/SettingsTab";
+import { IntegrationsTab } from "./tabs/IntegrationsTab";
+import { ImportExportTab } from "./tabs/ImportExportTab";
+import { RecordsTab } from "./tabs/RecordsTab";
 
 const TABS = [
   { id: "settings", label: "Settings" },
@@ -19,6 +22,9 @@ const TABS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "results", label: "Results" },
   { id: "community", label: "Community" },
+  { id: "integrations", label: "Integrations & API" },
+  { id: "import_export", label: "Data Import & Export" },
+  { id: "records", label: "Certificates & Records" },
   { id: "audit", label: "Audit" },
 ] as const;
 
@@ -78,6 +84,9 @@ function EventManageContent() {
       {activeTab === "dashboard" ? <DashboardTab eventId={eventId} /> : null}
       {activeTab === "results" ? <ResultsTab eventId={eventId} /> : null}
       {activeTab === "community" ? <CommunityTab eventId={eventId} /> : null}
+      {activeTab === "integrations" ? <IntegrationsTab eventId={eventId} /> : null}
+      {activeTab === "import_export" ? <ImportExportTab eventId={eventId} /> : null}
+      {activeTab === "records" ? <RecordsTab eventId={eventId} /> : null}
       {activeTab === "audit" ? <AuditTab eventId={eventId} /> : null}
     </div>
   );

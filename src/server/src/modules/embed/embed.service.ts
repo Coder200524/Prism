@@ -66,5 +66,5 @@ export function isValidResizeMessage(
   if (payload.type !== "dogfood:resize") {
     return false;
   }
-  return typeof event.data.height === "number" && event.data.height >= 0;
+  return typeof payload.height === "number" && payload.height >= 0;
 }

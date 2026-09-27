@@ -29,14 +29,17 @@ export function setStoredToken(token: string | null): void {
 type RequestOptions = {
   method?: string;
   body?: unknown;
+  rawBody?: string;
+  headers?: Record<string, string>;
   token?: string | null;
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",
+    ...options.headers,
   };
-  if (options.body !== undefined) {
+  if (options.body !== undefined && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -45,10 +48,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const body =
+    options.rawBody !== undefined
+      ? options.rawBody
+      : options.body !== undefined
+        ? JSON.stringify(options.body)
+        : undefined;
+
   const response = await fetch(path, {
-    method: options.method ?? (options.body !== undefined ? "POST" : "GET"),
+    method: options.method ?? (body !== undefined ? "POST" : "GET"),
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
   });
 
   if (response.status === 204) {
