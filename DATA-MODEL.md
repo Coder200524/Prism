@@ -74,11 +74,16 @@ Source file: `fixtures.json` (organiser-owned; do not edit).
 
 ## Import and export paths
 
-| Path | Direction | Notes |
-|---|---|---|
-| `fixtures.json` → `runSeed()` | Import | Idempotent upserts; run on container start |
-| `GET /api/events/:id/export.csv?type=results` | Export | Ranked projects + criterion averages |
-| `GET /api/events/:id/export.csv?type=scores` | Export | Per-assignment criterion values + weighted total |
-| Gallery `GET /api/projects` | Public read | Submitted projects of published events only |
+| Path | Direction | Format | Notes |
+|---|---|---|---|
+| `fixtures.json` → `runSeed()` | Import | JSON | Idempotent upserts; run on container boot |
+| `GET /api/events/:id/export.json` | Export | JSON (`dogfood-event` v1) | Full event export (tracks, prizes, criteria, judges, teams, projects, scores, votes, comments). Sanitized: password hashes, session tokens, API keys, and raw IPs are excluded. Compatible with fixture importer. |
+| `POST /api/import?dryRun=true\|false` | Import | JSON | Accepts `fixtures.json` or `export.json` format. Validated via Zod. Atomic single transaction (all or nothing rollback). Idempotent. Body limit 10 MB. |
+| `GET /api/events/:id/export/projects.csv` | Export | CSV | Project list (`id,title,track,team,status,submittedAt,repoUrl,demoUrl`) |
+| `GET /api/events/:id/export/judges.csv` | Export | CSV | Judge list (`email,name,tracks`) |
+| `POST /api/events/:id/import/judges.csv` | Import | CSV | Imports judge invites from CSV (`email,name,tracks`). Supports `dryRun`. |
+| `GET /api/events/:id/export.csv?type=results` | Export | CSV | Ranked projects + criterion averages |
+| `GET /api/events/:id/export.csv?type=scores` | Export | CSV | Per-assignment criterion values + weighted total |
 
-Seed entrypoint: `src/server/src/seed/index.ts` (`runSeed`). CSV builder: `src/server/src/lib/csv.ts`.
+Seed entrypoint: `src/server/src/seed/index.ts` (`runSeed`). CSV builder: `src/server/src/lib/csv.ts`. Transfer module: `src/server/src/modules/transfer/`.
+

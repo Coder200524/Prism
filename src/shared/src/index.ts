@@ -70,3 +70,6 @@ export {
   type CreateApiKeyBody,
 } from "./schemas/apikeys.js";
 
+export { importEventSchema, type ImportEventInput } from "./schemas/transfer.js";
+
+

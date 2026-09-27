@@ -169,6 +169,11 @@ export function generateOpenApiSpec() {
   addRoute("post", "/api/events/{eventId}/results/unpublish", "Unpublish event results", { security: true });
   addRoute("get", "/api/events/{eventId}/results", "Get published or organizer results");
   addRoute("get", "/api/events/{eventId}/export.csv", "Export scores CSV", { security: true });
+  addRoute("get", "/api/events/{eventId}/export.json", "Export full event JSON", { security: true });
+  addRoute("get", "/api/events/{eventId}/export/projects.csv", "Export projects CSV", { security: true });
+  addRoute("get", "/api/events/{eventId}/export/judges.csv", "Export judges CSV", { security: true });
+  addRoute("post", "/api/import", "Import event JSON or fixtures document", { security: true });
+  addRoute("post", "/api/events/{eventId}/import/judges.csv", "Import judges from CSV", { security: true });
   addRoute("get", "/api/events/{eventId}/audit", "Get event audit log", { security: true });
 
   // Assignments & Judge routes
