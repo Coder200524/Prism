@@ -139,3 +139,14 @@ UI never substitutes for these checks.
   names.
 - Normalization ignores partial reviews’ missing criteria in the weight sum rather than
   imputing values.
+
+## Verifiable judge records
+
+When results are published (or via explicit organizer action), verifiable participation records are issued for judges with at least one submitted review.
+
+1. **What is signed:** Ed25519 digital signature over canonical JSON payload `{ id, type, eventId, eventName, judgeDisplayName, reviewsSubmitted, firstReviewAt, lastReviewAt, issuer, issuedAt }`.
+2. **Why no scores or comments:** To preserve judge isolation and confidentiality, specific project scores and review comments are strictly excluded from the verifiable record payload.
+3. **Canonicalisation:** Keys are recursively sorted alphabetically; arrays and primitives stringified without whitespace (UTF-8).
+4. **Key rotation & verification:** Public keys are served at `GET /api/records/keys` with key ID (`kid`). Retired keys remain in the table to verify past records. Verification can be performed online via `POST /api/records/verify` or offline using `tools/verify-record.mjs`.
+5. **Revocation:** Organizers and admins can revoke records with a reason via `POST /api/records/:id/revoke`.
+

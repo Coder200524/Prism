@@ -25,6 +25,8 @@ import {
   putCriteriaBodySchema,
   registerBodySchema,
   scoreUpdateBodySchema,
+  revokeRecordSchema,
+  verifyRecordSchema,
 } from "@dogfood/shared";
 
 export function generateOpenApiSpec() {
@@ -197,6 +199,14 @@ export function generateOpenApiSpec() {
   addRoute("get", "/api/events/{eventId}/votes/flagged", "List flagged votes", { security: true });
   addRoute("post", "/api/votes/{voteId}/void", "Void suspicious vote", { security: true });
   addRoute("post", "/api/votes/{voteId}/restore", "Restore voided vote", { security: true });
+
+  // Records & Verification
+  addRoute("get", "/api/records/keys", "Get public signing keys for records verification");
+  addRoute("post", "/api/records/verify", "Verify a record signature and status", { body: verifyRecordSchema });
+  addRoute("get", "/api/records/{recordId}", "Get record details and verification status");
+  addRoute("post", "/api/records/{recordId}/revoke", "Revoke record", { security: true, body: revokeRecordSchema });
+  addRoute("get", "/api/me/records", "List records for logged-in user", { security: true });
+  addRoute("post", "/api/events/{eventId}/records/issue", "Issue judge participation records for event", { security: true });
 
   // OpenAPI self route
   addRoute("get", "/api/openapi.json", "Get OpenAPI 3.1 JSON specification");

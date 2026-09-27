@@ -72,4 +72,13 @@ export {
 
 export { importEventSchema, type ImportEventInput } from "./schemas/transfer.js";
 
+export {
+  revokeRecordSchema,
+  verifyRecordSchema,
+  issueRecordSchema,
+  type RevokeRecordBody,
+  type VerifyRecordBody,
+  type IssueRecordBody,
+} from "./schemas/records.js";
+
 

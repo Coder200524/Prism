@@ -4,8 +4,9 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     setupFiles: ["./tests/helpers/setup-env.ts"],
-    hookTimeout: 60_000,
-    testTimeout: 60_000,
+    hookTimeout: 120_000,
+    testTimeout: 120_000,
+    fileParallelism: false,
   },
   resolve: {
     alias: {

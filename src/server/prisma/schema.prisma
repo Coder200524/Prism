@@ -47,6 +47,7 @@ model User {
   votes        Vote[]
   comments     Comment[]
   apiKeys      ApiKey[]
+  records      Record[]
 }
 
 model Session {
@@ -89,6 +90,7 @@ model Event {
   votes        Vote[]
   comments     Comment[]
   apiKeys      ApiKey[]
+  records      Record[]
 }
 
 model Track {
@@ -342,4 +344,37 @@ model ApiKey {
   @@index([ownerId])
   @@index([eventId])
 }
+
+model SigningKey {
+  id         String    @id @default(cuid())
+  publicKey  String
+  privateKey String
+  createdAt  DateTime  @default(now())
+  retiredAt  DateTime?
+
+  records Record[]
+}
+
+model Record {
+  id            String    @id @default(cuid())
+  type          String
+  eventId       String
+  subjectUserId String
+  payload       Json
+  payloadHash   String
+  signature     String
+  kid           String
+  issuedAt      DateTime  @default(now())
+  revokedAt     DateTime?
+  revokedReason String?
+
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subjectUser User       @relation(fields: [subjectUserId], references: [id], onDelete: Cascade)
+  signingKey  SigningKey @relation(fields: [kid], references: [id], onDelete: Restrict)
+
+  @@index([eventId, type])
+  @@index([subjectUserId])
+  @@index([kid])
+}
+
 

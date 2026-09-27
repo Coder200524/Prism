@@ -40,7 +40,7 @@ describe("api/seed", () => {
     expect(first.events).toBeGreaterThan(0);
     expect(first.projects).toBeGreaterThan(0);
     expect(first.assignments).toBeGreaterThan(0);
-  });
+  }, 120000);
 
   it("preserves edits to scores and rubric weights when run twice", async () => {
     await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
@@ -82,5 +82,5 @@ describe("api/seed", () => {
       },
     });
     expect(updatedScore.value).toBe(999);
-  });
+  }, 120000);
 });

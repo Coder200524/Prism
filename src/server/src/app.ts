@@ -18,6 +18,7 @@ import { communityRouter } from "./modules/community/routes.js";
 import { apiKeysRouter } from "./modules/apikeys/routes.js";
 import { openapiRouter } from "./modules/openapi/routes.js";
 import { transferRouter } from "./modules/transfer/routes.js";
+import { recordsRouter } from "./modules/records/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,8 @@ export function createApp(): Express {
 
   app.use("/api", openapiRouter);
   app.use("/api", transferRouter);
+  app.use("/api/records", recordsRouter);
+  app.use("/api", recordsRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/api-keys", apiKeysRouter);

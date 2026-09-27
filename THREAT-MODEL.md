@@ -65,3 +65,15 @@ As a self-hosted platform running high-stakes hackathons, maintaining the integr
   - All state-changing actions route through a central `audit()` function (`src/server/src/lib/audit.ts`) which appends immutable rows to the `AuditLog` table.
   - When an organizer voids a vote via `POST /api/votes/:voteId/void`, the action and the mandatory `reason` are logged as a `vote.void` event. Restorations are logged as `vote.restore`.
   - The database schema does not expose any application-level endpoint to modify or delete audit rows. Admin access to the raw Postgres database is required to tamper with the audit trail.
+
+## 11. Forged or Altered Participation Records & Certificates
+- **Threat**: An attacker or rogue judge crafting fake judge participation certificates or altering record fields (such as review counts or dates) to claim unearned judging credentials.
+- **Mitigation**:
+  - All participation records are digitally signed using Ed25519 asymmetric keypairs.
+  - The payload is formatted into a deterministic canonical JSON string before signing and hashing.
+  - Public keys are published at `GET /api/records/keys`.
+  - Anyone can independently verify authenticity online (`POST /api/records/verify`) or offline using `tools/verify-record.mjs`.
+  - Attempting to alter even a single character in the payload invalidates both the `payloadHash` (SHA-256) and the Ed25519 signature.
+  - Revoked records are tracked with `revokedAt` and `revokedReason`.
+- **Limitation**: Verification relies on the public key fetched from the portal or operator. If the portal host itself is compromised, an attacker with access to `SIGNING_KEY_SECRET` could generate valid signatures for forged records. Operators should rotate key secrets if compromised.
+

@@ -24,6 +24,8 @@ Prisma schema: `src/server/prisma/schema.prisma`. Postgres 16.
 | **Vote** | Community vote. Unique `(eventId, voterId, trackId)`. `ipHash` prevents storing raw PII. |
 | **Comment** | Community comment on a project. |
 | **ApiKey** | Machine access token for organizers (`prefix`, SHA-256 `keyHash`, `scopes[]`, optional `eventId`). |
+| **SigningKey** | Asymmetric Ed25519 keypair for records: `id` (kid), `publicKey` PEM, AES-256-GCM encrypted `privateKey`. |
+| **Record** | Signed verifiable participation record: `id`, `type`, `eventId`, `subjectUserId`, canonical `payload` JSON, `payloadHash`, Ed25519 `signature`, `kid`, `issuedAt`, `revokedAt`, `revokedReason`. |
 
 ## Important constraints
 

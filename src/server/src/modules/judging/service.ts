@@ -901,6 +901,8 @@ export async function getResults(req: Request, eventId: string) {
     : { results: publicResultsView(normalized, extras), published: true };
 }
 
+import { issueJudgeParticipationRecords } from "../records/records.service.js";
+
 export async function publishResults(req: Request, eventId: string) {
   await loadEventOrThrow(eventId);
   const event = await prisma.event.update({
@@ -908,6 +910,7 @@ export async function publishResults(req: Request, eventId: string) {
     data: { resultsPublishedAt: clock.now() },
   });
   await audit(req, "results.publish", { type: "event", id: eventId, eventId });
+  await issueJudgeParticipationRecords(eventId, req);
   return { resultsPublishedAt: event.resultsPublishedAt?.toISOString() ?? null };
 }
 
