@@ -802,6 +802,19 @@ describe("api/permission-matrix", () => {
         admin: 200,
       },
     },
+    {
+      name: "GET /api/events/:eventId/webhooks",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/webhooks`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
   ];
 
   for (const matrixCase of cases) {

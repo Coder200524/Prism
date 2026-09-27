@@ -75,5 +75,12 @@ As a self-hosted platform running high-stakes hackathons, maintaining the integr
   - Anyone can independently verify authenticity online (`POST /api/records/verify`) or offline using `tools/verify-record.mjs`.
   - Attempting to alter even a single character in the payload invalidates both the `payloadHash` (SHA-256) and the Ed25519 signature.
   - Revoked records are tracked with `revokedAt` and `revokedReason`.
-- **Limitation**: Verification relies on the public key fetched from the portal or operator. If the portal host itself is compromised, an attacker with access to `SIGNING_KEY_SECRET` could generate valid signatures for forged records. Operators should rotate key secrets if compromised.
+## 12. Webhook Server-Side Request Forgery (SSRF) & Payload Manipulation
+- **Threat**: An attacker registering a webhook URL pointing to internal services (e.g. AWS metadata `169.254.169.254`, loopback `127.0.0.1`, or local intranet `10.0.0.0/8`, `192.168.0.0/16`) to read internal data or scan ports via outgoing webhook deliveries.
+- **Mitigation**:
+  - **SSRF Defensive Checks**: Webhook URLs are resolved via DNS (`dns.resolve4` / `dns.resolve6`) and checked before registration and before every delivery dispatch (`src/server/src/modules/webhooks/ssrf.ts`).
+  - **Forbidden IP Ranges**: Link-local (`169.254.0.0/16`), IPv6 link-local (`fe80::/10`), loopback (`127.0.0.0/8`, `::1`), and private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) are blocked by default.
+  - **No Redirect Follows**: Webhook HTTP requests do not follow HTTP 301/302 redirects (`redirect: "manual"`), preventing an external URL from redirecting the worker to an internal IP.
+  - **Signature Verification**: Every outgoing delivery includes an `X-Dogfood-Signature` header formatted as `t=<timestamp>,v1=<hex>`. The HMAC-SHA256 signature is calculated over `t + "." + payload` using the webhook secret (encrypted at rest using AES-256-GCM). Receivers can verify authenticity and reject replayed payloads outside a tolerance window.
+  - **Sensitive Data Isolation**: Webhook event payloads are strictly scoped and MUST NOT contain judge scores, criterion values, raw judge comments, individual votes, passwords, or tokens.
 

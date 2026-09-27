@@ -6,7 +6,7 @@ export interface RecordItem {
   type: "judge_participation" | "participant_certificate" | "judge_certificate";
   eventId: string;
   subjectUserId: string;
-  payload: any;
+  payload: Record<string, unknown>;
   payloadHash: string;
   signature: string;
   kid: string;

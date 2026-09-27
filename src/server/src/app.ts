@@ -20,6 +20,7 @@ import { openapiRouter } from "./modules/openapi/routes.js";
 import { transferRouter } from "./modules/transfer/routes.js";
 import { recordsRouter } from "./modules/records/routes.js";
 import { embedRouter } from "./modules/embed/routes.js";
+import { webhooksRouter } from "./modules/webhooks/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -65,6 +66,7 @@ export function createApp(): Express {
   app.use("/api", transferRouter);
   app.use("/api", embedRouter);
   app.use("/", embedRouter);
+  app.use("/api", webhooksRouter);
   app.use("/api/records", recordsRouter);
   app.use("/api", recordsRouter);
   app.use("/api/auth", authRouter);

@@ -9,6 +9,7 @@ import { prisma } from "../../lib/prisma.js";
 import { generateToken } from "../../lib/tokens.js";
 import { submissionsOpen, isVisible } from "../events/phase.js";
 import { submissionsClosedError } from "../events/service.js";
+import { emitWebhookEvent } from "../webhooks/webhooks.service.js";
 
 function inviteUrl(code: string): string {
   return `${config.PUBLIC_URL}/join/${code}`;
@@ -140,6 +141,7 @@ export async function createTeam(req: Request, eventId: string, body: CreateTeam
     });
 
     await audit(req, "team.create", { type: "team", id: team.id, eventId }, { name: team.name });
+    emitWebhookEvent(eventId, "team.created", { teamId: team.id, name: team.name }).catch(() => {});
     return { team: serializeTeam(team), inviteUrl: inviteUrl(team.inviteCode) };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

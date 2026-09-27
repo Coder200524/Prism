@@ -48,6 +48,7 @@ model User {
   comments     Comment[]
   apiKeys      ApiKey[]
   records      Record[]
+  webhooks     Webhook[]
 }
 
 model Session {
@@ -91,6 +92,7 @@ model Event {
   comments     Comment[]
   apiKeys      ApiKey[]
   records      Record[]
+  webhooks     Webhook[]
 }
 
 model Track {
@@ -376,5 +378,43 @@ model Record {
   @@index([subjectUserId])
   @@index([kid])
 }
+
+model Webhook {
+  id          String   @id @default(cuid())
+  eventId     String
+  url         String
+  secret      String
+  events      String[]
+  active      Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  event     Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([eventId])
+  @@index([createdById])
+}
+
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  webhookId      String
+  eventType      String
+  payload        Json
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime?
+  lastStatusCode Int?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status, nextAttemptAt])
+}
+
 
 

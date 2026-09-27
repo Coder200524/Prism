@@ -45,9 +45,12 @@ export function MyCertificatesPage() {
           {certificates.map((cert) => {
             const payload = cert.payload || {};
             const isJudge = cert.type === "judge_certificate";
+            const eventName = String(payload.eventName ?? "");
+            const projectTitle = String(payload.projectTitle ?? "Project");
+            const placement = payload.placement ? String(payload.placement) : null;
             const title = isJudge
-              ? `Certificate of Judging — ${payload.eventName}`
-              : `${payload.projectTitle || "Project"} — ${payload.eventName}`;
+              ? `Certificate of Judging — ${eventName}`
+              : `${projectTitle} — ${eventName}`;
 
             return (
               <div
@@ -66,9 +69,9 @@ export function MyCertificatesPage() {
                     )}
                   </div>
                   <h2 className="mt-3 text-base font-bold text-stone-900">{title}</h2>
-                  {payload.placement && (
+                  {placement && (
                     <p className="mt-1 text-xs font-medium text-indigo-600">
-                      {payload.placement}
+                      {placement}
                     </p>
                   )}
                   <p className="mt-2 text-xs text-stone-500">

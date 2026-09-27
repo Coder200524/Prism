@@ -81,4 +81,12 @@ export {
   type IssueRecordBody,
 } from "./schemas/records.js";
 
+export {
+  createWebhookSchema,
+  updateWebhookSchema,
+  type CreateWebhookBody,
+  type UpdateWebhookBody,
+} from "./schemas/webhooks.js";
+
+
 

@@ -15,6 +15,7 @@ import {
   signCanonicalPayload,
   verifyCanonicalPayload,
 } from "./crypto.js";
+import { emitWebhookEvent } from "../webhooks/webhooks.service.js";
 
 export async function getActiveSigningKey() {
   const existing = await prisma.signingKey.findFirst({
@@ -160,6 +161,11 @@ export async function issueJudgeParticipationRecords(
       );
     }
 
+    emitWebhookEvent(eventId, "record.issued", {
+      recordId,
+      type: "judge_participation",
+      subjectUserId: judgeId,
+    }).catch(() => {});
     createdRecords.push(record);
   }
 
@@ -473,6 +479,11 @@ export async function issueCertificates(eventId: string, req?: Request) {
           { subjectUserId, type: "participant_certificate" },
         );
       }
+      emitWebhookEvent(eventId, "record.issued", {
+        recordId,
+        type: "participant_certificate",
+        subjectUserId,
+      }).catch(() => {});
       issuedRecords.push(record);
     }
   }
@@ -541,6 +552,11 @@ export async function issueCertificates(eventId: string, req?: Request) {
         { subjectUserId: judgeId, type: "judge_certificate" },
       );
     }
+    emitWebhookEvent(eventId, "record.issued", {
+      recordId,
+      type: "judge_certificate",
+      subjectUserId: judgeId,
+    }).catch(() => {});
     issuedRecords.push(record);
   }
 

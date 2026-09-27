@@ -53,7 +53,7 @@ export async function getEmbedGallery(query: {
 }
 
 export function isValidResizeMessage(
-  event: { origin: string; data: any },
+  event: { origin: string; data: unknown },
   expectedOrigin: string,
 ): boolean {
   if (expectedOrigin !== "*" && event.origin !== expectedOrigin) {
@@ -62,7 +62,8 @@ export function isValidResizeMessage(
   if (!event.data || typeof event.data !== "object") {
     return false;
   }
-  if (event.data.type !== "dogfood:resize") {
+  const payload = event.data as Record<string, unknown>;
+  if (payload.type !== "dogfood:resize") {
     return false;
   }
   return typeof event.data.height === "number" && event.data.height >= 0;

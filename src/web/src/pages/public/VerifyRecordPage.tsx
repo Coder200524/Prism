@@ -117,30 +117,30 @@ export function VerifyRecordPage() {
             </div>
             <div className="rounded-md bg-stone-50 p-3">
               <span className="block text-xs text-stone-400">Event</span>
-              <span className="font-medium text-stone-800">{payload.eventName || record.eventId}</span>
+              <span className="font-medium text-stone-800">{String(payload.eventName || record.eventId)}</span>
             </div>
-            {payload.participantName && (
+            {Boolean(payload.participantName) && (
               <div className="rounded-md bg-stone-50 p-3">
                 <span className="block text-xs text-stone-400">Participant</span>
-                <span className="font-medium text-stone-800">{payload.participantName}</span>
+                <span className="font-medium text-stone-800">{String(payload.participantName)}</span>
               </div>
             )}
-            {payload.judgeName && (
+            {Boolean(payload.judgeName) && (
               <div className="rounded-md bg-stone-50 p-3">
                 <span className="block text-xs text-stone-400">Judge</span>
-                <span className="font-medium text-stone-800">{payload.judgeName}</span>
+                <span className="font-medium text-stone-800">{String(payload.judgeName)}</span>
               </div>
             )}
-            {payload.projectTitle && (
+            {Boolean(payload.projectTitle) && (
               <div className="rounded-md bg-stone-50 p-3">
                 <span className="block text-xs text-stone-400">Project</span>
-                <span className="font-medium text-stone-800">{payload.projectTitle}</span>
+                <span className="font-medium text-stone-800">{String(payload.projectTitle)}</span>
               </div>
             )}
-            {payload.placement && (
+            {Boolean(payload.placement) && (
               <div className="rounded-md bg-stone-50 p-3">
                 <span className="block text-xs text-stone-400">Placement</span>
-                <span className="font-medium text-stone-800">{payload.placement}</span>
+                <span className="font-medium text-stone-800">{String(payload.placement)}</span>
               </div>
             )}
             <div className="rounded-md bg-stone-50 p-3">

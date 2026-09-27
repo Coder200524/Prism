@@ -49,13 +49,20 @@ export function CertificatePage() {
       ? "Certificate of Appreciation"
       : "Certificate of Achievement";
 
-  const recipientName =
-    payload.participantName || payload.judgeName || payload.judgeDisplayName || "Participant";
+  const recipientName = String(
+    payload.participantName || payload.judgeName || payload.judgeDisplayName || "Participant",
+  );
+
+  const eventName = String(payload.eventName || "the hackathon");
+  const reviewsCount = String(payload.reviewsCount || payload.reviewsSubmitted || 1);
+  const projectTitle = String(payload.projectTitle || "Project");
+  const teamName = String(payload.teamName || "Team");
+  const placement = payload.placement ? String(payload.placement) : "";
 
   const detailsText =
     record.type === "judge_certificate" || record.type === "judge_participation"
-      ? `For serving as a judge at ${payload.eventName || "the hackathon"} and completing ${payload.reviewsCount || payload.reviewsSubmitted || 1} project review(s).`
-      : `For successfully participating in ${payload.eventName || "the hackathon"} with project "${payload.projectTitle || "Project"}" (Team ${payload.teamName || "Team"})${payload.placement ? ` — ${payload.placement}` : ""}.`;
+      ? `For serving as a judge at ${eventName} and completing ${reviewsCount} project review(s).`
+      : `For successfully participating in ${eventName} with project "${projectTitle}" (Team ${teamName})${placement ? ` — ${placement}` : ""}.`;
 
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">

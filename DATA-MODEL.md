@@ -26,6 +26,8 @@ Prisma schema: `src/server/prisma/schema.prisma`. Postgres 16.
 | **ApiKey** | Machine access token for organizers (`prefix`, SHA-256 `keyHash`, `scopes[]`, optional `eventId`). |
 | **SigningKey** | Asymmetric Ed25519 keypair for records: `id` (kid), `publicKey` PEM, AES-256-GCM encrypted `privateKey`. |
 | **Record** | Signed verifiable participation record: `id`, `type`, `eventId`, `subjectUserId`, canonical `payload` JSON, `payloadHash`, Ed25519 `signature`, `kid`, `issuedAt`, `revokedAt`, `revokedReason`. |
+| **Webhook** | Event-scoped webhook subscription: `id`, `eventId`, `url`, AES-256-GCM encrypted `secret`, `events[]`, `active`, `createdById`. |
+| **WebhookDelivery** | Outbox queue and audit trail for delivery attempts: `id`, `webhookId`, `eventType`, `payload` JSON, `status` (`pending` / `succeeded` / `failed`), `attempts`, `nextAttemptAt`, `lastStatusCode`, `lastError`. |
 
 ## Important constraints
 

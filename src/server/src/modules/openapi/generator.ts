@@ -27,6 +27,8 @@ import {
   scoreUpdateBodySchema,
   revokeRecordSchema,
   verifyRecordSchema,
+  createWebhookSchema,
+  updateWebhookSchema,
 } from "@dogfood/shared";
 
 export function generateOpenApiSpec() {
@@ -207,6 +209,16 @@ export function generateOpenApiSpec() {
   addRoute("post", "/api/records/{recordId}/revoke", "Revoke record", { security: true, body: revokeRecordSchema });
   addRoute("get", "/api/me/records", "List records for logged-in user", { security: true });
   addRoute("post", "/api/events/{eventId}/records/issue", "Issue judge participation records for event", { security: true });
+
+  // Webhooks
+  addRoute("get", "/api/events/{eventId}/webhooks", "List webhooks for event", { security: true });
+  addRoute("post", "/api/events/{eventId}/webhooks", "Create webhook for event", { security: true, body: createWebhookSchema });
+  addRoute("get", "/api/webhooks/{id}", "Get webhook detail", { security: true });
+  addRoute("patch", "/api/webhooks/{id}", "Update webhook", { security: true, body: updateWebhookSchema });
+  addRoute("delete", "/api/webhooks/{id}", "Delete webhook", { security: true });
+  addRoute("post", "/api/webhooks/{id}/test", "Test webhook ping", { security: true });
+  addRoute("get", "/api/webhooks/{id}/deliveries", "List deliveries for webhook", { security: true });
+  addRoute("post", "/api/webhook-deliveries/{id}/redeliver", "Redeliver webhook delivery", { security: true });
 
   // OpenAPI self route
   addRoute("get", "/api/openapi.json", "Get OpenAPI 3.1 JSON specification");
