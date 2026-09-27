@@ -63,3 +63,10 @@ export {
 export { castVoteBodySchema, voidVoteBodySchema, type CastVoteBody } from "./schemas/voting.js";
 
 export { createCommentBodySchema, hideCommentBodySchema } from "./schemas/comments.js";
+
+export {
+  apiKeyScopeSchema,
+  createApiKeyBodySchema,
+  type CreateApiKeyBody,
+} from "./schemas/apikeys.js";
+

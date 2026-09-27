@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { type Express, type Request, type Response } from "express";
 import { prisma } from "./lib/prisma.js";
-import { authenticate } from "./middleware/authenticate.js";
+import { authenticate, apiKeyRateLimiter } from "./middleware/authenticate.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { adminRouter } from "./modules/admin/routes.js";
 import { authRouter } from "./modules/auth/routes.js";
@@ -15,6 +15,8 @@ import {
 import { projectsRouter } from "./modules/projects/routes.js";
 import { teamsRouter } from "./modules/teams/routes.js";
 import { communityRouter } from "./modules/community/routes.js";
+import { apiKeysRouter } from "./modules/apikeys/routes.js";
+import { openapiRouter } from "./modules/openapi/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,14 +38,17 @@ export function createApp(): Express {
 
   app.use(express.json({ limit: "1mb" }));
   app.use(authenticate);
+  app.use(apiKeyRateLimiter);
 
   app.get("/api/health", async (_req: Request, res: Response) => {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: "ok" });
   });
 
+  app.use("/api", openapiRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/api-keys", apiKeysRouter);
   app.use("/api", communityRouter);
   app.use("/api/events", eventsRouter);
   app.use("/api/teams", teamsRouter);

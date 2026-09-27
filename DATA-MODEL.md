@@ -23,6 +23,7 @@ Prisma schema: `src/server/prisma/schema.prisma`. Postgres 16.
 | **AuditLog** | Append-only trail of state changes (`action`, actor, event, target, JSON `data`). |
 | **Vote** | Community vote. Unique `(eventId, voterId, trackId)`. `ipHash` prevents storing raw PII. |
 | **Comment** | Community comment on a project. |
+| **ApiKey** | Machine access token for organizers (`prefix`, SHA-256 `keyHash`, `scopes[]`, optional `eventId`). |
 
 ## Important constraints
 

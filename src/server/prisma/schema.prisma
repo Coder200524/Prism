@@ -46,6 +46,7 @@ model User {
   auditEntries AuditLog[]
   votes        Vote[]
   comments     Comment[]
+  apiKeys      ApiKey[]
 }
 
 model Session {
@@ -87,6 +88,7 @@ model Event {
   auditEntries AuditLog[]
   votes        Vote[]
   comments     Comment[]
+  apiKeys      ApiKey[]
 }
 
 model Track {
@@ -321,3 +323,23 @@ model Comment {
 
   @@index([projectId, createdAt])
 }
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  eventId    String?
+  ownerId    String
+  name       String
+  prefix     String
+  keyHash    String    @unique
+  scopes     String[]
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([eventId])
+}
+
