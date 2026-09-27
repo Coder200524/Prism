@@ -11,6 +11,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   VOTING_SECRET: z.string().default("default-voting-secret-for-dev"),
   SIGNING_KEY_SECRET: z.string().default("default-signing-key-secret-for-dev"),
+  EMBED_ALLOWED_ORIGINS: z.string().default("*"),
 });
 
 export type Config = z.infer<typeof envSchema>;

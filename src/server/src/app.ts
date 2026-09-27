@@ -19,6 +19,7 @@ import { apiKeysRouter } from "./modules/apikeys/routes.js";
 import { openapiRouter } from "./modules/openapi/routes.js";
 import { transferRouter } from "./modules/transfer/routes.js";
 import { recordsRouter } from "./modules/records/routes.js";
+import { embedRouter } from "./modules/embed/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,10 +31,23 @@ export function createApp(): Express {
     app.set("trust proxy", 1);
   }
   
-  app.use((_req: Request, res: Response, next: express.NextFunction) => {
-    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+  app.use((req: Request, res: Response, next: express.NextFunction) => {
+    const isEmbedRoute = req.path.startsWith("/embed") || req.path === "/embed.js" || req.path.startsWith("/api/embed");
+    const allowedOrigins = process.env.EMBED_ALLOWED_ORIGINS || "*";
+    
+    if (isEmbedRoute) {
+      res.setHeader(
+        "Content-Security-Policy",
+        `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors ${allowedOrigins}`
+      );
+    } else {
+      res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"
+      );
+      res.setHeader("X-Frame-Options", "DENY");
+    }
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "DENY");
     res.removeHeader("X-Powered-By");
     next();
   });
@@ -49,6 +63,8 @@ export function createApp(): Express {
 
   app.use("/api", openapiRouter);
   app.use("/api", transferRouter);
+  app.use("/api", embedRouter);
+  app.use("/", embedRouter);
   app.use("/api/records", recordsRouter);
   app.use("/api", recordsRouter);
   app.use("/api/auth", authRouter);

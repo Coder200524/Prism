@@ -25,10 +25,12 @@ import { VotePage } from "./pages/public/VotePage";
 import { CertificatePage } from "./pages/public/CertificatePage";
 import { VerifyRecordPage } from "./pages/public/VerifyRecordPage";
 import { MyCertificatesPage } from "./pages/participant/MyCertificates";
+import { EmbedGalleryPage } from "./pages/public/EmbedGalleryPage";
 
 export function App() {
   return (
     <Routes>
+      <Route path="embed/gallery" element={<EmbedGalleryPage />} />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="events" element={<EventsPage />} />
