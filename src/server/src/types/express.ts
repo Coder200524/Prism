@@ -13,6 +13,15 @@ export type RequestSession = {
   tokenHash: string;
 };
 
+export type RequestApiKey = {
+  id: string;
+  eventId: string | null;
+  ownerId: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+};
+
 declare global {
   // Express augments Request via its namespace pattern.
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -20,6 +29,7 @@ declare global {
     interface Request {
       user?: AuthUser;
       session?: RequestSession;
+      apiKey?: RequestApiKey;
     }
   }
 }

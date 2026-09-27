@@ -33,6 +33,7 @@ import {
   organizerResultsView,
   publicResultsView,
 } from "./results.js";
+import { emitWebhookEvent } from "../webhooks/webhooks.service.js";
 
 const JUDGE_INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -42,7 +43,7 @@ async function loadEventOrThrow(eventId: string) {
   return event;
 }
 
-async function loadEventNormData(eventId: string) {
+export async function loadEventNormData(eventId: string) {
   const event = await loadEventOrThrow(eventId);
   const [criteria, projects, assignments, tracks] = await Promise.all([
     prisma.criterion.findMany({
@@ -431,6 +432,10 @@ export async function autoAssign(req: Request, eventId: string) {
     unassignable: result.unassignable.length,
   });
 
+  if (result.created.length > 0) {
+    emitWebhookEvent(eventId, "judging.assignments_created", { createdCount: result.created.length }).catch(() => {});
+  }
+
   return {
     created: result.created.length,
     unassignable: result.unassignable,
@@ -500,6 +505,7 @@ export async function manualAssign(req: Request, eventId: string, body: ManualAs
     id: assignment.id,
     eventId,
   });
+  emitWebhookEvent(eventId, "judging.assignments_created", { createdCount: 1 }).catch(() => {});
   return { assignment };
 }
 
@@ -901,6 +907,11 @@ export async function getResults(req: Request, eventId: string) {
     : { results: publicResultsView(normalized, extras), published: true };
 }
 
+import {
+  issueCertificates,
+  issueJudgeParticipationRecords,
+} from "../records/records.service.js";
+
 export async function publishResults(req: Request, eventId: string) {
   await loadEventOrThrow(eventId);
   const event = await prisma.event.update({
@@ -908,6 +919,9 @@ export async function publishResults(req: Request, eventId: string) {
     data: { resultsPublishedAt: clock.now() },
   });
   await audit(req, "results.publish", { type: "event", id: eventId, eventId });
+  await issueJudgeParticipationRecords(eventId, req);
+  await issueCertificates(eventId, req);
+  emitWebhookEvent(eventId, "results.published", { eventId, publishedAt: event.resultsPublishedAt?.toISOString() }).catch(() => {});
   return { resultsPublishedAt: event.resultsPublishedAt?.toISOString() ?? null };
 }
 
@@ -918,6 +932,7 @@ export async function unpublishResults(req: Request, eventId: string) {
     data: { resultsPublishedAt: null },
   });
   await audit(req, "results.unpublish", { type: "event", id: eventId, eventId });
+  emitWebhookEvent(eventId, "results.unpublished", { eventId }).catch(() => {});
   return { resultsPublishedAt: event.resultsPublishedAt };
 }
 

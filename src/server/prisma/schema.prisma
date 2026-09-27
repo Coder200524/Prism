@@ -46,6 +46,9 @@ model User {
   auditEntries AuditLog[]
   votes        Vote[]
   comments     Comment[]
+  apiKeys      ApiKey[]
+  records      Record[]
+  webhooks     Webhook[]
 }
 
 model Session {
@@ -87,6 +90,9 @@ model Event {
   auditEntries AuditLog[]
   votes        Vote[]
   comments     Comment[]
+  apiKeys      ApiKey[]
+  records      Record[]
+  webhooks     Webhook[]
 }
 
 model Track {
@@ -321,3 +327,94 @@ model Comment {
 
   @@index([projectId, createdAt])
 }
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  eventId    String?
+  ownerId    String
+  name       String
+  prefix     String
+  keyHash    String    @unique
+  scopes     String[]
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([eventId])
+}
+
+model SigningKey {
+  id         String    @id @default(cuid())
+  publicKey  String
+  privateKey String
+  createdAt  DateTime  @default(now())
+  retiredAt  DateTime?
+
+  records Record[]
+}
+
+model Record {
+  id            String    @id @default(cuid())
+  type          String
+  eventId       String
+  subjectUserId String
+  payload       Json
+  payloadHash   String
+  signature     String
+  kid           String
+  issuedAt      DateTime  @default(now())
+  revokedAt     DateTime?
+  revokedReason String?
+
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subjectUser User       @relation(fields: [subjectUserId], references: [id], onDelete: Cascade)
+  signingKey  SigningKey @relation(fields: [kid], references: [id], onDelete: Restrict)
+
+  @@index([eventId, type])
+  @@index([subjectUserId])
+  @@index([kid])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  eventId     String
+  url         String
+  secret      String
+  events      String[]
+  active      Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  event     Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([eventId])
+  @@index([createdById])
+}
+
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  webhookId      String
+  eventType      String
+  payload        Json
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime?
+  lastStatusCode Int?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status, nextAttemptAt])
+}
+
+
+

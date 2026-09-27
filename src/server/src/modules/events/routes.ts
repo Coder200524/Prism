@@ -12,9 +12,20 @@ import { requireAuth, requireEventRole, requirePlatformRole } from "../../middle
 import { validateBody } from "../../middleware/validate.js";
 import * as teamsService from "../teams/service.js";
 import { mountJudgingOnEvents } from "../judging/routes.js";
+import { eventApiKeysRouter } from "../apikeys/routes.js";
+import { eventTransferRouter } from "../transfer/routes.js";
+import { mountRecordsOnEvents } from "../records/routes.js";
+import { mountWebhooksOnEvents } from "../webhooks/routes.js";
 import * as eventsService from "./service.js";
 
 export const eventsRouter = Router();
+
+eventsRouter.use("/:eventId/api-keys", eventApiKeysRouter);
+eventsRouter.use("/:eventId", eventTransferRouter);
+mountRecordsOnEvents(eventsRouter);
+mountWebhooksOnEvents(eventsRouter);
+
+
 
 eventsRouter.get("/", async (req, res) => {
   const result = await eventsService.listEvents(req);

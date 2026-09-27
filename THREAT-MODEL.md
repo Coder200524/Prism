@@ -65,3 +65,22 @@ As a self-hosted platform running high-stakes hackathons, maintaining the integr
   - All state-changing actions route through a central `audit()` function (`src/server/src/lib/audit.ts`) which appends immutable rows to the `AuditLog` table.
   - When an organizer voids a vote via `POST /api/votes/:voteId/void`, the action and the mandatory `reason` are logged as a `vote.void` event. Restorations are logged as `vote.restore`.
   - The database schema does not expose any application-level endpoint to modify or delete audit rows. Admin access to the raw Postgres database is required to tamper with the audit trail.
+
+## 11. Forged or Altered Participation Records & Certificates
+- **Threat**: An attacker or rogue judge crafting fake judge participation certificates or altering record fields (such as review counts or dates) to claim unearned judging credentials.
+- **Mitigation**:
+  - All participation records are digitally signed using Ed25519 asymmetric keypairs.
+  - The payload is formatted into a deterministic canonical JSON string before signing and hashing.
+  - Public keys are published at `GET /api/records/keys`.
+  - Anyone can independently verify authenticity online (`POST /api/records/verify`) or offline using `tools/verify-record.mjs`.
+  - Attempting to alter even a single character in the payload invalidates both the `payloadHash` (SHA-256) and the Ed25519 signature.
+  - Revoked records are tracked with `revokedAt` and `revokedReason`.
+## 12. Webhook Server-Side Request Forgery (SSRF) & Payload Manipulation
+- **Threat**: An attacker registering a webhook URL pointing to internal services (e.g. AWS metadata `169.254.169.254`, loopback `127.0.0.1`, or local intranet `10.0.0.0/8`, `192.168.0.0/16`) to read internal data or scan ports via outgoing webhook deliveries.
+- **Mitigation**:
+  - **SSRF Defensive Checks**: Webhook URLs are resolved via DNS (`dns.resolve4` / `dns.resolve6`) and checked before registration and before every delivery dispatch (`src/server/src/modules/webhooks/ssrf.ts`).
+  - **Forbidden IP Ranges**: Link-local (`169.254.0.0/16`), IPv6 link-local (`fe80::/10`), loopback (`127.0.0.0/8`, `::1`), and private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) are blocked by default.
+  - **No Redirect Follows**: Webhook HTTP requests do not follow HTTP 301/302 redirects (`redirect: "manual"`), preventing an external URL from redirecting the worker to an internal IP.
+  - **Signature Verification**: Every outgoing delivery includes an `X-Dogfood-Signature` header formatted as `t=<timestamp>,v1=<hex>`. The HMAC-SHA256 signature is calculated over `t + "." + payload` using the webhook secret (encrypted at rest using AES-256-GCM). Receivers can verify authenticity and reject replayed payloads outside a tolerance window.
+  - **Sensitive Data Isolation**: Webhook event payloads are strictly scoped and MUST NOT contain judge scores, criterion values, raw judge comments, individual votes, passwords, or tokens.
+

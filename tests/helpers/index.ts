@@ -3,6 +3,7 @@ export { resetDatabase } from "./db.js";
 export { clock, setFixedClock, clearFixedClock } from "./clock.js";
 export {
   createUser,
+  createEvent,
   createTokenForUser,
   authHeader,
   grantEventRole,

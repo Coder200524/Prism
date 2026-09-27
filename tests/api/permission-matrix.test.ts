@@ -55,8 +55,6 @@ describe("api/permission-matrix", () => {
 
   beforeEach(async () => {
     clearFixedClock();
-    await resetDatabase();
-    scenario = await seedPermissionScenario();
   });
 
   const cases: MatrixCase[] = [
@@ -752,10 +750,80 @@ describe("api/permission-matrix", () => {
         admin: 200,
       },
     },
+    {
+      name: "POST /api/events/:eventId/records/issue",
+      method: "post",
+      path: (s) => `/api/events/${s.eventId}/records/issue`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "GET /api/me/certificates",
+      method: "get",
+      path: () => "/api/me/certificates",
+      expected: {
+        anonymous: 401,
+        participant: 200,
+        judgeA: 200,
+        judgeB: 200,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "GET /api/events/:eventId/certificates",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/certificates`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "POST /api/events/:eventId/certificates/issue",
+      method: "post",
+      path: (s) => `/api/events/${s.eventId}/certificates/issue`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "GET /api/events/:eventId/webhooks",
+      method: "get",
+      path: (s) => `/api/events/${s.eventId}/webhooks`,
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
   ];
 
   for (const matrixCase of cases) {
     describe(matrixCase.name, () => {
+      beforeEach(async () => {
+        await resetDatabase();
+        scenario = await seedPermissionScenario();
+      });
+
       for (const actor of ACTORS) {
         it(`${actor} → ${matrixCase.expected[actor]}`, async () => {
           const token = tokenFor(scenario, actor);

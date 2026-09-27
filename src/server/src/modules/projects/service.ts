@@ -21,6 +21,7 @@ import { prisma } from "../../lib/prisma.js";
 import { submissionsOpen, isVisible } from "../events/phase.js";
 import { submissionsClosedError } from "../events/service.js";
 import { findDuplicates } from "./duplicates.js";
+import { emitWebhookEvent } from "../webhooks/webhooks.service.js";
 
 function serializeProject(project: {
   id: string;
@@ -297,6 +298,12 @@ export async function updateProject(req: Request, projectId: string) {
   });
 
   await audit(req, "project.update", { type: "project", id: projectId, eventId: project.eventId });
+  emitWebhookEvent(project.eventId, "project.updated", {
+    projectId: updated.id,
+    title: updated.title,
+    teamId: updated.teamId,
+    trackId: updated.trackId,
+  }).catch(() => {});
   return { project: serializeProject(updated) };
 }
 
@@ -369,7 +376,15 @@ export async function submitProject(req: Request, projectId: string) {
     },
   });
 
-  return { project: serializeProject(refreshed ?? updated) };
+  const resProject = refreshed ?? updated;
+  emitWebhookEvent(project.eventId, "project.submitted", {
+    projectId: resProject.id,
+    title: resProject.title,
+    teamId: resProject.teamId,
+    trackId: resProject.trackId,
+  }).catch(() => {});
+
+  return { project: serializeProject(resProject) };
 }
 
 export async function clearDuplicate(req: Request, projectId: string) {

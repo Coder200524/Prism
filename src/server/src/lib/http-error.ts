@@ -33,3 +33,8 @@ export function notFound(message = "Not found"): HttpError {
 export function conflict(code: string, message: string): HttpError {
   return new HttpError(409, code, message);
 }
+
+export function payloadTooLarge(message = "Payload too large"): HttpError {
+  return new HttpError(413, "payload_too_large", message);
+}
+

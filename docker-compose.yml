@@ -25,6 +25,7 @@ services:
       PUBLIC_URL: http://localhost:8080
       SEED_DEMO: "true"
       NODE_ENV: production
+      SIGNING_KEY_SECRET: "demo-signing-key-secret-change-in-prod"
       CHECKPOINT_DISABLE: "1"
     depends_on:
       db:

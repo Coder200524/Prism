@@ -39,6 +39,9 @@ export function Layout() {
                   My teams
                 </NavLink>
               ) : null}
+              <NavLink to="/certificates" className={navLinkClass}>
+                Certificates
+              </NavLink>
               {hasEventRole("JUDGE") ? (
                 <NavLink to="/judge" className={navLinkClass}>
                   Judge

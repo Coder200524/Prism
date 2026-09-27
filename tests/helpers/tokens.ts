@@ -72,4 +72,17 @@ export async function grantEventRole(
   });
 }
 
+export async function createEvent(data?: Partial<{ name: string; description: string }>) {
+  const now = clock.now();
+  return prisma.event.create({
+    data: {
+      name: data?.name ?? "Test Event",
+      description: data?.description ?? "",
+      submissionsOpen: new Date(now.getTime() - 86400000),
+      submissionsClose: new Date(now.getTime() + 86400000 * 7),
+    },
+  });
+}
+
 export { PASSWORD as TEST_PASSWORD, EventRoleType, PlatformRole };
+

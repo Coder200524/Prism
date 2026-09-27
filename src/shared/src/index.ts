@@ -63,3 +63,30 @@ export {
 export { castVoteBodySchema, voidVoteBodySchema, type CastVoteBody } from "./schemas/voting.js";
 
 export { createCommentBodySchema, hideCommentBodySchema } from "./schemas/comments.js";
+
+export {
+  apiKeyScopeSchema,
+  createApiKeyBodySchema,
+  type CreateApiKeyBody,
+} from "./schemas/apikeys.js";
+
+export { importEventSchema, type ImportEventInput } from "./schemas/transfer.js";
+
+export {
+  revokeRecordSchema,
+  verifyRecordSchema,
+  issueRecordSchema,
+  type RevokeRecordBody,
+  type VerifyRecordBody,
+  type IssueRecordBody,
+} from "./schemas/records.js";
+
+export {
+  createWebhookSchema,
+  updateWebhookSchema,
+  type CreateWebhookBody,
+  type UpdateWebhookBody,
+} from "./schemas/webhooks.js";
+
+
+

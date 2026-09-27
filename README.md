@@ -6,7 +6,7 @@ with weighted criteria and cross-judge normalization. Everything runs offline af
 are built — no cloud APIs, CDNs, or external fonts.
 
 Claimed tiers: **T1** (events, teams, submissions, gallery), **T2** (rubric, judging,
-normalization, results, CSV export), and **T3** (community voting, comment system, abuse detection).
+normalization, results, CSV export), **T3** (community voting, comment system, abuse detection), and **T4** (REST API & API Keys, OpenAPI 3.1 & Swagger UI, Bulk Data Import & Export, Verifiable Judge Records & Certificates, Embeddable Gallery Widget, Signed Webhooks with Retries & SSRF defenses).
 
 ## One-command start
 

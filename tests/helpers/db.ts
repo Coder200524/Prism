@@ -1,6 +1,13 @@
 import { prisma } from "../../src/server/src/lib/prisma.js";
 
 const TABLES = [
+  "WebhookDelivery",
+  "Webhook",
+  "Vote",
+  "Comment",
+  "Record",
+  "SigningKey",
+  "ApiKey",
   "CriterionScore",
   "Assignment",
   "Criterion",
