@@ -14,6 +14,48 @@ Open http://localhost:8080 in Chrome with DevTools (F12) → Console open.
 
 ---
 
+## 🌐 Step-by-Step Browser QA Walkthrough
+
+### 1. Organizer Dashboard — **Integrations & API** Tab
+* **Log in:** `organizer@dogfood.local` (Password: `dogfood-demo`).
+* **Navigate:** Go to **Organize** → Click any event (e.g., **Demo Open Hack** or **Sample Hack 2026**) → Click **Integrations & API** tab.
+* **Test Actions:**
+  1. **OpenAPI Spec & Swagger UI:** Click **Swagger Interactive UI →**. Verify `/api/docs` opens with interactive API documentation without console errors.
+  2. **Create API Key:** Type key name `"Automation Key"` → Click **Create Key** → Verify green box shows the secret key (`dfk_...`) with a **Copy** button.
+  3. **Register Webhook:** Type target URL `https://example.com/webhook`, check **Project Submitted** → Click **Register Webhook**.
+  4. **Test Webhook Payload:** Click **Send Test Payload** → Click **View Logs** → Verify delivery entry appears → Test **Redeliver** button.
+  5. **SSRF Defense Test:** Try registering `http://127.0.0.1:8080` as a webhook URL → Verify red error blocks it (`invalid_webhook_url`).
+
+### 2. Organizer Dashboard — **Data Import & Export** Tab
+* **Navigate:** Click **Data Import & Export** tab.
+* **Test Actions:**
+  1. **Export Data:** Click **Export Event JSON**, **Export Projects CSV**, **Export Judges CSV**, and **Export Results CSV**. Verify all 4 files download cleanly.
+  2. **JSON Import Preview:** Select/paste the downloaded JSON into the textarea → Click **Preview (Dry Run)** → Verify a blue summary box displays expected counts (`teamsToCreate`, `projectsToCreate`).
+  3. **CSV Judges Import:** Upload/paste CSV (`email,name,tracks`) → Click **Preview (Dry Run)** → Verify preview summary.
+
+### 3. Organizer Dashboard — **Certificates & Records** Tab
+* **Navigate:** Click **Certificates & Records** tab.
+* **Test Actions:**
+  1. **Issue Certificates:** Click **Issue Certificates Now** → Verify alert confirms generated certificate count.
+  2. **View Issued List:** Verify certificates for participants and judges appear in the list with **Valid** badges.
+  3. **Revoke Certificate:** Click **Revoke** on one certificate → Enter reason `"QA Revocation Test"` → Click **Confirm Revocation** → Verify status badge changes to **Revoked**.
+
+### 4. Participant & Public Verification
+* **Navigate:** Click **Certificates** in the top navigation bar (or go to `/certificates`).
+* **Test Actions:**
+  1. **My Certificates:** Verify earned certificates are listed.
+  2. **Printable Certificate:** Click **View / Print Certificate** → Verify landscape printable layout renders with QR code and **Download PDF / Print** button.
+  3. **Valid Verification:** Click **Verify** (or open `/verify/<record_id>`) → Verify green **✓ Valid Signature** badge displays along with signed details.
+  4. **Revoked Verification:** Open `/verify/<revoked_record_id>` → Verify amber **⚠ Revoked Record** badge displays with reason `"QA Revocation Test"`.
+
+### 5. Embeddable Public Gallery Widget
+* **Navigate:** Open `http://localhost:8080/embed/gallery?eventId=evt_01` in a new tab or iframe.
+* **Test Actions:**
+  1. Verify compact gallery widget loads cleanly with search bar and track filters.
+  2. Verify only submitted projects appear.
+
+---
+
 ## 🔴 0. Tier 4 Core Blockers
 
 | # | Check | Test | Pass if |
