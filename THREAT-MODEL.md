@@ -85,3 +85,10 @@ As a self-hosted platform running high-stakes hackathons, maintaining the integr
   - **Signature Verification**: Every outgoing delivery includes an `X-Dogfood-Signature` header formatted as `t=<timestamp>,v1=<hex>`. The HMAC-SHA256 signature is calculated over `t + "." + payload` using the webhook secret (encrypted at rest using AES-256-GCM). Receivers can verify authenticity and reject replayed payloads outside a tolerance window.
   - **Sensitive Data Isolation**: Webhook event payloads are strictly scoped and MUST NOT contain judge scores, criterion values, raw judge comments, individual votes, passwords, or tokens.
 
+## 13. Bulk Import Abuse (Takeovers & Forgeries)
+- **Threat**: A user attempting to use the import endpoint to seize organizer control over an existing event, forge scores, override deadlines, or bypass conflict of interest rules.
+- **Mitigation**:
+  - **Authorization**: `POST /api/import` strictly requires the caller to already be an `ORGANIZER` of the target event (or `ADMIN`). API keys are entirely blocked from performing imports.
+  - **Identifier Matching**: Events are matched exclusively by `id`, never by `name`, preventing accidental or malicious takeover of identically named events.
+  - **Validation**: All imported projects are checked against the event's `submissionsClose` deadline. All imported scores are validated to ensure they fall within the criterion's `minScore` and `maxScore`, reference valid criteria, and do not violate judge conflict of interest (a judge cannot score their own team).
+  - **Audit Trail**: Every refused import attempt generates an `import.refused` audit row.

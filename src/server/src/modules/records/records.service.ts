@@ -275,14 +275,20 @@ export async function verifyRecordPayload(body: VerifyRecordBody) {
     return { valid: false, reason: "Signature verification failed" };
   }
 
+  const payloadHash = hashPayload(canonicalJson);
+
   const matchingRecord = await prisma.record.findFirst({
     where: {
       kid: body.kid,
-      signature: body.signature,
+      payloadHash,
     },
   });
 
-  if (matchingRecord?.revokedAt) {
+  if (!matchingRecord) {
+    return { valid: false, reason: "unknown_record" };
+  }
+
+  if (matchingRecord.revokedAt) {
     return {
       valid: false,
       revoked: true,

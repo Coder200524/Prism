@@ -28,6 +28,8 @@ export type Scenario = {
   judgeA: TestUser;
   judgeB: TestUser;
   outsider: TestUser;
+  scopedKey: string;
+  unscopedKey: string;
 };
 
 export async function seedPermissionScenario(suffix: string = ""): Promise<Scenario> {
@@ -196,6 +198,27 @@ export async function seedPermissionScenario(suffix: string = ""): Promise<Scena
     },
   });
 
+  const scopedApiKeyRow = await prisma.apiKey.create({
+    data: {
+      eventId: event.id,
+      ownerId: organizer.id,
+      name: "Scoped Key",
+      prefix: "dfk_scop",
+      keyHash: "948dab4d19bfb492b1103be4dc4b9549aafe5593bdf88c6f5f9da0be794a0902",
+      scopes: ["read", "write"],
+    }
+  });
+
+  const unscopedApiKeyRow = await prisma.apiKey.create({
+    data: {
+      ownerId: organizer.id,
+      name: "Unscoped Key",
+      prefix: "dfk_unsc",
+      keyHash: "8cfed89045eb069f4b63790482d4b683bc287f29da231a45e95840a0d4696e63",
+      scopes: ["read", "write"],
+    }
+  });
+
   return {
     now,
     eventId: event.id,
@@ -216,5 +239,7 @@ export async function seedPermissionScenario(suffix: string = ""): Promise<Scena
     judgeA,
     judgeB,
     outsider,
+    scopedKey: "dfk_scop_dummy",
+    unscopedKey: "dfk_unsc_dummy",
   };
 }

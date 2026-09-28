@@ -82,7 +82,7 @@ Source file: `fixtures.json` (organiser-owned; do not edit).
 |---|---|---|---|
 | `fixtures.json` → `runSeed()` | Import | JSON | Idempotent upserts; run on container boot |
 | `GET /api/events/:id/export.json` | Export | JSON (`dogfood-event` v1) | Full event export (tracks, prizes, criteria, judges, teams, projects, scores, votes, comments). Sanitized: password hashes, session tokens, API keys, and raw IPs are excluded. Compatible with fixture importer. |
-| `POST /api/import?dryRun=true\|false` | Import | JSON | Accepts `fixtures.json` or `export.json` format. Validated via Zod. Atomic single transaction (all or nothing rollback). Idempotent. Body limit 10 MB. |
+| `POST /api/import?dryRun=true\\|false` | Import | JSON | Accepts `fixtures.json` or `export.json` format. Validated via Zod. Atomic single transaction (all or nothing rollback). Idempotent. Body limit 10 MB. Requires platform ADMIN or event ORGANIZER. Matches existing event by id only. Validates deadlines and scores. |
 | `GET /api/events/:id/export/projects.csv` | Export | CSV | Project list (`id,title,track,team,status,submittedAt,repoUrl,demoUrl`) |
 | `GET /api/events/:id/export/judges.csv` | Export | CSV | Judge list (`email,name,tracks`) |
 | `POST /api/events/:id/import/judges.csv` | Import | CSV | Imports judge invites from CSV (`email,name,tracks`). Supports `dryRun`. |

@@ -104,6 +104,24 @@ export async function resolveRequestEventId(req: Request): Promise<string | null
     return row?.eventId ?? null;
   }
 
+  const voteId = pathSegment(url, /\/api\/votes\/([^/]+)/);
+  if (voteId) {
+    const row = await prisma.vote.findUnique({
+      where: { id: voteId },
+      select: { eventId: true },
+    });
+    return row?.eventId ?? null;
+  }
+
+  const commentId = pathSegment(url, /\/api\/comments\/([^/]+)/);
+  if (commentId) {
+    const row = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { eventId: true },
+    });
+    return row?.eventId ?? null;
+  }
+
   if (url === "/api/import" || url.startsWith("/api/import?")) {
     const body = req.body as { event?: { id?: string } } | undefined;
     if (body?.event?.id) return body.event.id;
