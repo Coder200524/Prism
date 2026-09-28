@@ -287,15 +287,13 @@ describe("api/community/voting", () => {
   });
 
   describe("Rate Limit", () => {
-    it("returns 429 after 30 requests", async () => {
-      // 30 valid requests
-      for (let i = 0; i < 30; i++) {
+    it("returns 429 after the hourly voting request limit", async () => {
+      for (let i = 0; i < 15; i++) {
         await request(app)
           .get(`/api/events/${eventId}/ballot`)
           .set(authHeader(voter1.token))
           .expect(200);
       }
-      // 31st request
       const res = await request(app)
         .get(`/api/events/${eventId}/ballot`)
         .set(authHeader(voter1.token));

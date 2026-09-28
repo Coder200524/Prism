@@ -36,7 +36,7 @@ export function DashboardTab({ eventId }: { eventId: string }) {
           Updated <DateTime value={data.generatedAt} /> · refreshes every 5 seconds
         </p>
         <div className="space-y-4">
-          <ProgressBar value={data.totals.percentComplete} label="Assignments submitted" />
+          <ProgressBar value={data.totals.percentComplete} label="Required reviews complete" />
           <ProgressBar value={data.totals.coveragePercent} label={`Target coverage (${data.totals.targetCoverage} reviews)`} />
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">

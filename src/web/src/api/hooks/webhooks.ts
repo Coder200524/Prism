@@ -72,7 +72,8 @@ export function useTestWebhook() {
 export function useRedeliverWebhook() {
   const queryClient = useQueryClient();
   return useMutation<{ success: boolean; delivery: WebhookDeliveryItem }, Error, { webhookId: string; deliveryId: string }>({
-    mutationFn: ({ deliveryId }) => apiRequest(`/api/webhooks/deliveries/${deliveryId}/redeliver`, { method: "POST" }),
+    mutationFn: ({ deliveryId }) =>
+      apiRequest(`/api/webhook-deliveries/${deliveryId}/redeliver`, { method: "POST" }),
     onSuccess: (_, { webhookId }) => {
       queryClient.invalidateQueries({ queryKey: ["webhook-deliveries", webhookId] });
     },

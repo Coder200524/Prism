@@ -10,6 +10,7 @@ import {
 } from "../../../api/hooks/events";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
+import { DateTimeFields } from "../../../components/DateTimeFields";
 import { ErrorMessage } from "../../../components/ErrorMessage";
 import { Input } from "../../../components/Input";
 import { Textarea } from "../../../components/Textarea";
@@ -100,18 +101,20 @@ export function SettingsTab({ eventId }: { eventId: string }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <Input
-            label="Submissions open"
-            type="datetime-local"
+          <DateTimeFields
+            idPrefix="submissions-open"
+            dateLabel="Submissions open (date)"
+            timeLabel="Submissions open (time)"
             value={submissionsOpen}
-            onChange={(e) => setSubmissionsOpen(e.target.value)}
+            onChange={setSubmissionsOpen}
             required
           />
-          <Input
-            label="Submissions close"
-            type="datetime-local"
+          <DateTimeFields
+            idPrefix="submissions-close"
+            dateLabel="Submissions close (date)"
+            timeLabel="Submissions close (time)"
             value={submissionsClose}
-            onChange={(e) => setSubmissionsClose(e.target.value)}
+            onChange={setSubmissionsClose}
             required
           />
           <div className="rounded border border-slate-200 p-3">
@@ -119,17 +122,19 @@ export function SettingsTab({ eventId }: { eventId: string }) {
               Community voting (optional)
             </p>
             <div className="space-y-3">
-              <Input
-                label="Voting opens"
-                type="datetime-local"
+              <DateTimeFields
+                idPrefix="voting-open"
+                dateLabel="Voting opens (date)"
+                timeLabel="Voting opens (time)"
                 value={votingOpen}
-                onChange={(e) => setVotingOpen(e.target.value)}
+                onChange={setVotingOpen}
               />
-              <Input
-                label="Voting closes"
-                type="datetime-local"
+              <DateTimeFields
+                idPrefix="voting-close"
+                dateLabel="Voting closes (date)"
+                timeLabel="Voting closes (time)"
                 value={votingClose}
-                onChange={(e) => setVotingClose(e.target.value)}
+                onChange={setVotingClose}
               />
               {votingError ? (
                 <p className="text-sm text-red-600">{votingError}</p>

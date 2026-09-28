@@ -9,6 +9,7 @@ import {
 } from "@dogfood/shared";
 import { ProjectStatus, Prisma } from "@prisma/client";
 import { audit } from "../../lib/audit.js";
+import { assertApiKeyEventScope } from "../../lib/api-key-scope.js";
 import { clock } from "../../lib/clock.js";
 import {
   conflict,
@@ -87,6 +88,11 @@ async function runDuplicateDetection(eventId: string): Promise<void> {
   }
 }
 
+/** Escape `\`, `%`, and `_` so user search text is matched literally in LIKE/ILIKE. */
+export function escapeLikePattern(input: string): string {
+  return input.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export async function listGallery(query: GalleryQuery) {
   const parsed = galleryQuerySchema.parse(query);
   const where: Prisma.ProjectWhereInput = {
@@ -94,15 +100,30 @@ export async function listGallery(query: GalleryQuery) {
     event: { publishedAt: { not: null } },
     ...(parsed.eventId ? { eventId: parsed.eventId } : {}),
     ...(parsed.trackId ? { trackId: parsed.trackId } : {}),
-    ...(parsed.q
-      ? {
-          OR: [
-            { title: { contains: parsed.q, mode: "insensitive" } },
-            { summary: { contains: parsed.q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
   };
+
+  if (parsed.q) {
+    const pattern = `%${escapeLikePattern(parsed.q)}%`;
+    const matched = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id
+      FROM "Project" p
+      INNER JOIN "Event" e ON e.id = p."eventId"
+      WHERE p.status = 'SUBMITTED'
+        AND e."publishedAt" IS NOT NULL
+        AND (p.title ILIKE ${pattern} ESCAPE '\\' OR p.summary ILIKE ${pattern} ESCAPE '\\')
+        ${parsed.eventId ? Prisma.sql`AND p."eventId" = ${parsed.eventId}` : Prisma.empty}
+        ${parsed.trackId ? Prisma.sql`AND p."trackId" = ${parsed.trackId}` : Prisma.empty}
+    `;
+    if (matched.length === 0) {
+      return {
+        items: [],
+        total: 0,
+        page: parsed.page,
+        pageSize: parsed.pageSize,
+      };
+    }
+    where.id = { in: matched.map((row) => row.id) };
+  }
 
   const [total, items] = await Promise.all([
     prisma.project.count({ where }),
@@ -135,6 +156,8 @@ export async function getProject(req: Request, projectId: string) {
     },
   });
   if (!project) throw notFound("Project not found");
+
+  assertApiKeyEventScope(req, project.eventId);
 
   if (project.status !== ProjectStatus.SUBMITTED) {
     if (!req.user) throw notFound("Project not found");

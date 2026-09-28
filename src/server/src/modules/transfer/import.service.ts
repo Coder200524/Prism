@@ -3,10 +3,12 @@ import bcrypt from "bcryptjs";
 import type { Request } from "express";
 import { importEventSchema, type ImportEventInput } from "@dogfood/shared";
 import { audit } from "../../lib/audit.js";
+import { assertApiKeyEventScope } from "../../lib/api-key-scope.js";
 import { clock } from "../../lib/clock.js";
-import { badRequest, notFound, unauthorized } from "../../lib/http-error.js";
+import { badRequest, forbidden, notFound, unauthorized } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { generateToken, hashToken } from "../../lib/tokens.js";
+import { parseCsv } from "../../lib/csv.js";
 
 async function generateUnusablePasswordHash(): Promise<string> {
   const random = crypto.randomBytes(32).toString("hex");
@@ -15,6 +17,7 @@ async function generateUnusablePasswordHash(): Promise<string> {
 
 export async function importData(req: Request, rawBody: unknown, dryRun: boolean) {
   if (!req.user) throw unauthorized();
+  if (req.apiKey) throw forbidden("access.denied", "API keys are not allowed to perform imports");
 
   const parseResult = importEventSchema.safeParse(rawBody);
   if (!parseResult.success) {
@@ -25,12 +28,27 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
 
   // 1. Resolve or identify event
   const targetEventId = data.event.id ?? `evt_imp_${Date.now()}`;
-  const existingEvent = await prisma.event.findFirst({
-    where: { OR: [{ id: targetEventId }, { name: data.event.name }] },
+  const existingEvent = await prisma.event.findUnique({
+    where: { id: targetEventId },
   });
 
   const eventToCreate = !existingEvent;
   const eventId = existingEvent ? existingEvent.id : targetEventId;
+
+  // Event-scoped API keys may only import into their own event.
+  assertApiKeyEventScope(req, eventId);
+
+  if (!eventToCreate) {
+    if (req.user.platformRole !== "ADMIN") {
+      const isOrganizer = await prisma.eventRole.findUnique({
+        where: { userId_eventId_role: { userId: req.user.id, eventId, role: "ORGANIZER" } },
+      });
+      if (!isOrganizer) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw forbidden("access.denied", "Must be organizer of the existing event");
+      }
+    }
+  }
 
   // 2. Identify users to create vs skip
   const allEmails = new Set<string>();
@@ -108,6 +126,111 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
     scoresSkipped: existingScores,
   };
 
+  // Pre-validate projects and scores
+  const computedSubmissionsClose = existingEvent
+    ? existingEvent.submissionsClose
+    : data.event.submissionsClose
+      ? new Date(data.event.submissionsClose)
+      : data.event.submissions_close
+        ? new Date(data.event.submissions_close)
+        : null;
+
+  if (computedSubmissionsClose) {
+    for (let i = 0; i < data.projects.length; i++) {
+      const pData = data.projects[i]!;
+      const subAt = pData.submittedAt
+        ? new Date(pData.submittedAt)
+        : pData.submitted_at
+          ? new Date(pData.submitted_at)
+          : clock.now();
+      
+      if (subAt > computedSubmissionsClose) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_project", [{ path: `projects.${i}.submittedAt`, message: "Project submittedAt cannot be after event submissionsClose" }]);
+      }
+    }
+  }
+
+  const existingCriteria = existingEvent
+    ? await prisma.criterion.findMany({ where: { eventId } })
+    : [];
+  const criteriaMapByKey = new Map<string, { minScore: number; maxScore: number }>();
+  for (const c of existingCriteria) criteriaMapByKey.set(c.key, { minScore: c.minScore, maxScore: c.maxScore });
+  for (const c of data.criteria) criteriaMapByKey.set(c.key, { minScore: c.minScore ?? 1, maxScore: c.maxScore ?? 5 });
+
+  const projectMembers = new Map<string, Set<string>>();
+  if (existingEvent) {
+    const existingProjectsData = await prisma.project.findMany({
+      where: { eventId },
+      include: { team: { include: { members: { include: { user: true } } } } },
+    });
+    for (const p of existingProjectsData) {
+      const mems = new Set(p.team?.members.map((m) => m.user.email.toLowerCase()) || []);
+      projectMembers.set(p.id, mems);
+      projectMembers.set(p.title.toLowerCase(), mems);
+    }
+  }
+
+  const importTeamMembers = new Map<string, Set<string>>();
+  for (const t of data.teams) {
+    const mems = new Set(t.members.map((m) => m.toLowerCase()));
+    if (t.id) importTeamMembers.set(t.id, mems);
+    importTeamMembers.set(t.name.toLowerCase(), mems);
+  }
+
+  for (const p of data.projects) {
+    const teamRef = p.teamId ?? p.team ?? "";
+    let mems = importTeamMembers.get(teamRef) ?? importTeamMembers.get(teamRef.toLowerCase()) ?? new Set<string>();
+    if (mems.size === 0 && existingEvent) {
+       const existingTeam = await prisma.team.findFirst({
+         where: { OR: [{ id: teamRef }, { name: teamRef }], eventId },
+         include: { members: { include: { user: true } } }
+       });
+       if (existingTeam) mems = new Set(existingTeam.members.map((m) => m.user.email.toLowerCase()));
+    }
+    if (p.id) projectMembers.set(p.id, mems);
+    projectMembers.set(p.title.toLowerCase(), mems);
+  }
+
+  for (let i = 0; i < data.scores.length; i++) {
+    const sData = data.scores[i]!;
+    const criteriaEntries = sData.criteria
+      ? Object.entries(sData.criteria)
+      : (sData.scores ?? []).map((sc) => [sc.criterionKey, sc.value] as const);
+
+    for (const [cKey, val] of criteriaEntries) {
+      const cSpec = criteriaMapByKey.get(cKey);
+      if (!cSpec) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: "Unknown criterion" }]);
+      }
+      if (!Number.isInteger(val) || (val as number) < cSpec.minScore || (val as number) > cSpec.maxScore) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: `Score must be an integer between ${cSpec.minScore} and ${cSpec.maxScore}` }]);
+      }
+    }
+
+    const judgeRef = sData.judgeId ?? sData.judge ?? "";
+    let judgeEmail = judgeRef.includes("@") ? judgeRef.toLowerCase() : null;
+    if (!judgeEmail && existingEvent) {
+      const user = await prisma.user.findUnique({ where: { id: judgeRef }, select: { email: true } });
+      if (user) judgeEmail = user.email.toLowerCase();
+    }
+    if (!judgeEmail) {
+      const judgeInImport = data.judges.find((j) => j.id === judgeRef || j.name === judgeRef);
+      if (judgeInImport) judgeEmail = judgeInImport.email.toLowerCase();
+    }
+    
+    if (judgeEmail) {
+      const projectRef = sData.projectId ?? sData.project ?? "";
+      const mems = projectMembers.get(projectRef) ?? projectMembers.get(projectRef.toLowerCase());
+      if (mems && mems.has(judgeEmail.toLowerCase())) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.conflict", [{ path: `scores.${i}`, message: "Judge cannot score their own team" }]);
+      }
+    }
+  }
+
   if (dryRun) {
     return {
       dryRun: true,
@@ -151,21 +274,23 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
       }
 
       // Add importing user as ORGANIZER
-      await tx.eventRole.upsert({
-        where: {
-          userId_eventId_role: {
+      if (eventToCreate) {
+        await tx.eventRole.upsert({
+          where: {
+            userId_eventId_role: {
+              userId: req.user!.id,
+              eventId,
+              role: "ORGANIZER",
+            },
+          },
+          create: {
             userId: req.user!.id,
             eventId,
             role: "ORGANIZER",
           },
-        },
-        create: {
-          userId: req.user!.id,
-          eventId,
-          role: "ORGANIZER",
-        },
-        update: {},
-      });
+          update: {},
+        });
+      }
 
       // B. Create Users
       const userMapByEmail = new Map<string, string>();
@@ -223,18 +348,73 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
       }
     }
 
-    // D. Create Prizes & Criteria
+    // D. Create Prizes & Criteria (prizes: create-if-missing only)
+    const existingPrizes = await tx.prize.findMany({ where: { eventId } });
+    const prizeById = new Map(existingPrizes.map((p) => [p.id, p]));
+    const prizeIdentityKey = (
+      name: string,
+      place: number | null | undefined,
+      trackId: string | null | undefined,
+    ) => `${name.toLowerCase()}|${place ?? ""}|${trackId ?? ""}`;
+    const prizeByIdentity = new Map(
+      existingPrizes.map((p) => [prizeIdentityKey(p.name, p.place, p.trackId), p]),
+    );
+
     for (const pData of data.prizes) {
-      await tx.prize.create({
+      let prizeTrackId: string | null = null;
+      if (pData.trackId) {
+        prizeTrackId =
+          trackMapByName.get(pData.trackId) ??
+          trackMapByName.get(pData.trackId.toLowerCase()) ??
+          null;
+        if (!prizeTrackId) {
+          const trackRow = await tx.track.findUnique({
+            where: { id: pData.trackId },
+            select: { id: true, eventId: true },
+          });
+          if (trackRow && trackRow.eventId !== eventId) {
+            throw badRequest(
+              `Import rejected: track "${pData.trackId}" does not belong to event ${eventId}`,
+            );
+          }
+          prizeTrackId = trackRow?.eventId === eventId ? trackRow.id : null;
+        }
+      }
+
+      if (pData.id) {
+        const byId = prizeById.get(pData.id);
+        if (byId) {
+          continue;
+        }
+        const conflicting = await tx.prize.findUnique({
+          where: { id: pData.id },
+          select: { id: true, eventId: true },
+        });
+        if (conflicting && conflicting.eventId !== eventId) {
+          throw badRequest(
+            `Import rejected: prize id "${pData.id}" already belongs to another event`,
+          );
+        }
+      }
+
+      const identity = prizeIdentityKey(pData.name, pData.place ?? null, prizeTrackId);
+      if (prizeByIdentity.has(identity)) {
+        continue;
+      }
+
+      const created = await tx.prize.create({
         data: {
           ...(pData.id ? { id: pData.id } : {}),
           eventId,
+          trackId: prizeTrackId,
           name: pData.name,
           description: pData.description ?? "",
           value: pData.value ?? "",
           place: pData.place ?? null,
         },
       });
+      prizeById.set(created.id, created);
+      prizeByIdentity.set(identity, created);
     }
 
     for (const cData of data.criteria) {
@@ -270,10 +450,20 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
         });
 
         for (const tRef of jData.tracks) {
-          const trId =
-            trackMapByName.get(tRef) ??
-            trackMapByName.get(tRef.toLowerCase()) ??
-            tRef;
+          let trId =
+            trackMapByName.get(tRef) ?? trackMapByName.get(tRef.toLowerCase());
+          if (!trId) {
+            const trackRow = await tx.track.findUnique({
+              where: { id: tRef },
+              select: { id: true, eventId: true },
+            });
+            if (trackRow && trackRow.eventId !== eventId) {
+              throw badRequest(
+                `Import rejected: track "${tRef}" does not belong to event ${eventId}`,
+              );
+            }
+            trId = trackRow?.eventId === eventId ? trackRow.id : undefined;
+          }
           if (trId) {
             await tx.judgeTrack.upsert({
               where: { userId_trackId: { userId: uId, trackId: trId } },
@@ -299,6 +489,17 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
         (tmData.id ? teamMapByName.get(tmData.id) : undefined);
 
       if (!teamId) {
+        if (tmData.id) {
+          const conflicting = await tx.team.findUnique({
+            where: { id: tmData.id },
+            select: { id: true, eventId: true },
+          });
+          if (conflicting && conflicting.eventId !== eventId) {
+            throw badRequest(
+              `Import rejected: team id "${tmData.id}" already belongs to another event`,
+            );
+          }
+        }
         const inviteCode = tmData.inviteCode ?? `inv_${crypto.randomBytes(4).toString("hex")}`;
         const created = await tx.team.create({
           data: {
@@ -349,17 +550,41 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
 
       if (!projectId) {
         const teamRef = pData.teamId ?? pData.team ?? "";
-        const teamId =
-          teamMapByName.get(teamRef) ??
-          teamMapByName.get(teamRef.toLowerCase()) ??
-          teamRef;
+        let teamId =
+          teamMapByName.get(teamRef) ?? teamMapByName.get(teamRef.toLowerCase());
+        if (!teamId && teamRef) {
+          const teamRow = await tx.team.findUnique({
+            where: { id: teamRef },
+            select: { id: true, eventId: true },
+          });
+          if (teamRow && teamRow.eventId !== eventId) {
+            throw badRequest(
+              `Import rejected: team "${teamRef}" does not belong to event ${eventId}`,
+            );
+          }
+          teamId = teamRow?.eventId === eventId ? teamRow.id : undefined;
+        }
 
         const trackRef = pData.trackId ?? pData.track ?? null;
-        const trackId = trackRef
-          ? (trackMapByName.get(trackRef) ??
-              trackMapByName.get(trackRef.toLowerCase()) ??
-              trackRef)
-          : null;
+        let trackId: string | null = null;
+        if (trackRef) {
+          trackId =
+            trackMapByName.get(trackRef) ??
+            trackMapByName.get(trackRef.toLowerCase()) ??
+            null;
+          if (!trackId) {
+            const trackRow = await tx.track.findUnique({
+              where: { id: trackRef },
+              select: { id: true, eventId: true },
+            });
+            if (trackRow && trackRow.eventId !== eventId) {
+              throw badRequest(
+                `Import rejected: track "${trackRef}" does not belong to event ${eventId}`,
+              );
+            }
+            trackId = trackRow?.eventId === eventId ? trackRow.id : null;
+          }
+        }
 
         if (teamId) {
           const subAt = pData.submittedAt
@@ -367,6 +592,18 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
             : pData.submitted_at
               ? new Date(pData.submitted_at)
               : clock.now();
+
+          if (pData.id) {
+            const conflicting = await tx.project.findUnique({
+              where: { id: pData.id },
+              select: { id: true, eventId: true },
+            });
+            if (conflicting && conflicting.eventId !== eventId) {
+              throw badRequest(
+                `Import rejected: project id "${pData.id}" already belongs to another event`,
+              );
+            }
+          }
 
           const created = await tx.project.create({
             data: {
@@ -393,7 +630,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
       }
     }
 
-    // H. Create Scores / Assignments
+    // H. Create Scores / Assignments — create-only; never overwrite existing judging.
     const criteriaByEvent = await tx.criterion.findMany({ where: { eventId } });
     const criterionMapByKey = new Map<string, string>();
     for (const c of criteriaByEvent) criterionMapByKey.set(c.key, c.id);
@@ -411,54 +648,67 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
         projectMapByTitle.get(projectRef.toLowerCase()) ??
         projectRef;
 
-      if (judgeId && projectId) {
-        const assignment = await tx.assignment.upsert({
-          where: { judgeId_projectId: { judgeId, projectId } },
-          create: {
-            eventId,
-            judgeId,
-            projectId,
-            status: "SUBMITTED",
-            comment: sData.comment ?? "",
-            submittedAt: clock.now(),
-          },
-          update: {
-            status: "SUBMITTED",
-            comment: sData.comment ?? "",
-            submittedAt: clock.now(),
+      if (!judgeId || !projectId) continue;
+
+      const projectRow = await tx.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, eventId: true },
+      });
+      if (!projectRow || projectRow.eventId !== eventId) {
+        throw badRequest(
+          `Import rejected: project "${projectRef}" does not belong to event ${eventId}`,
+        );
+      }
+
+      const judgeRole = await tx.eventRole.findFirst({
+        where: { eventId, userId: judgeId, role: "JUDGE" },
+        select: { userId: true },
+      });
+      if (!judgeRole) {
+        throw badRequest(
+          `Import rejected: judge "${judgeRef}" is not a judge of event ${eventId}`,
+        );
+      }
+
+      const existingAssignment = await tx.assignment.findUnique({
+        where: { judgeId_projectId: { judgeId, projectId } },
+        select: { id: true },
+      });
+      if (existingAssignment) {
+        // Preserve organizer/judge decisions — do not mutate scores or status.
+        continue;
+      }
+
+      const assignment = await tx.assignment.create({
+        data: {
+          eventId,
+          judgeId,
+          projectId,
+          status: "SUBMITTED",
+          comment: sData.comment ?? "",
+          submittedAt: clock.now(),
+        },
+      });
+
+      const criteriaEntries = sData.criteria
+        ? Object.entries(sData.criteria)
+        : (sData.scores ?? []).map((sc) => [sc.criterionKey, sc.value] as const);
+
+      for (const [cKey, val] of criteriaEntries) {
+        const cId = criterionMapByKey.get(cKey);
+        if (!cId) continue;
+        await tx.criterionScore.create({
+          data: {
+            assignmentId: assignment.id,
+            criterionId: cId,
+            value: val as number,
           },
         });
-
-        const criteriaEntries = sData.criteria
-          ? Object.entries(sData.criteria)
-          : (sData.scores ?? []).map((sc) => [sc.criterionKey, sc.value] as const);
-
-        for (const [cKey, val] of criteriaEntries) {
-          const cId = criterionMapByKey.get(cKey);
-          if (cId) {
-            await tx.criterionScore.upsert({
-              where: {
-                assignmentId_criterionId: {
-                  assignmentId: assignment.id,
-                  criterionId: cId,
-                },
-              },
-              create: {
-                assignmentId: assignment.id,
-                criterionId: cId,
-                value: val as number,
-              },
-              update: {
-                value: val as number,
-              },
-            });
-          }
-        }
       }
     }
   }, { timeout: 30000 });
 
-  await audit(req, "import.json", { type: "event", id: eventId, eventId });
+  await audit(req, "import.json", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
 
   return {
     dryRun: false,
@@ -475,21 +725,18 @@ export async function importJudgesCsv(
   dryRun: boolean,
 ) {
   if (!req.user) throw unauthorized();
+  if (req.apiKey) throw forbidden("access.denied", "API keys are not allowed to perform imports");
 
   const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
   if (!event) throw notFound("Event not found");
 
-  const lines = csvContent
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  const firstLine = lines[0];
-  if (!firstLine || lines.length < 2) {
+  const rows = parseCsv(csvContent);
+  const headerRow = rows[0];
+  if (!headerRow || rows.length < 2) {
     throw badRequest("CSV file must contain a header and at least one data row");
   }
 
-  const header = firstLine.toLowerCase().split(",").map((h) => h.trim());
+  const header = headerRow.map((h) => h.trim().toLowerCase());
   const emailIdx = header.indexOf("email");
   const nameIdx = header.indexOf("name");
   const tracksIdx = header.indexOf("tracks");
@@ -507,14 +754,14 @@ export async function importJudgesCsv(
 
   const parseErrors: Array<{ row: number; error: string }> = [];
   const invitesToCreate: Array<{ email: string; name: string; trackIds: string[] }> = [];
+  const seenEmails = new Set<string>();
 
-  for (let i = 1; i < lines.length; i++) {
-    const lineStr = lines[i];
-    if (!lineStr) continue;
-    const cols = lineStr.split(",").map((c) => c.trim().replace(/^['"]|['"]$/g, ""));
-    const email = cols[emailIdx]?.toLowerCase();
-    const name = cols[nameIdx];
-    const rawTracks = tracksIdx !== -1 ? cols[tracksIdx] : "";
+  for (let i = 1; i < rows.length; i++) {
+    const cols = rows[i];
+    if (!cols) continue;
+    const email = cols[emailIdx]?.trim().toLowerCase();
+    const name = cols[nameIdx]?.trim();
+    const rawTracks = tracksIdx !== -1 ? (cols[tracksIdx] ?? "") : "";
 
     if (!email || !email.includes("@")) {
       parseErrors.push({ row: i + 1, error: `Invalid email address on row ${i + 1}` });
@@ -525,6 +772,11 @@ export async function importJudgesCsv(
       parseErrors.push({ row: i + 1, error: `Missing name on row ${i + 1}` });
       continue;
     }
+
+    if (seenEmails.has(email)) {
+      continue;
+    }
+    seenEmails.add(email);
 
     const trackList = rawTracks
       ? rawTracks
@@ -537,16 +789,40 @@ export async function importJudgesCsv(
     invitesToCreate.push({ email, name, trackIds: trackList });
   }
 
+  // Skip emails that already have a judge role or a pending invite for this event.
+  const existingJudges = await prisma.eventRole.findMany({
+    where: { eventId, role: "JUDGE" },
+    include: { user: { select: { email: true } } },
+  });
+  const existingJudgeEmails = new Set(
+    existingJudges.map((row) => row.user.email.toLowerCase()),
+  );
+  const existingInvites = await prisma.judgeInvite.findMany({
+    where: { eventId, acceptedAt: null, expiresAt: { gt: clock.now() } },
+    select: { email: true },
+  });
+  const existingInviteEmails = new Set(
+    existingInvites.map((row) => row.email.toLowerCase()),
+  );
+
+  const filtered = invitesToCreate.filter(
+    (inv) =>
+      !existingJudgeEmails.has(inv.email) && !existingInviteEmails.has(inv.email),
+  );
+
   if (dryRun) {
     return {
       dryRun: true,
-      summary: { invitesToCreate: invitesToCreate.length },
+      summary: {
+        invitesToCreate: filtered.length,
+        skippedExisting: invitesToCreate.length - filtered.length,
+      },
       errors: parseErrors,
     };
   }
 
   let createdCount = 0;
-  for (const inv of invitesToCreate) {
+  for (const inv of filtered) {
     const token = generateToken(32);
     const tokenHash = hashToken(token);
     const expiresAt = new Date(clock.now().getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -564,11 +840,16 @@ export async function importJudgesCsv(
     createdCount++;
   }
 
-  await audit(req, "import.judges_csv", { type: "event", id: eventId, eventId }, { count: createdCount });
+  await audit(req, "import.judges_csv", { type: "event", id: eventId, eventId }, {
+    count: createdCount,
+  });
 
   return {
     dryRun: false,
-    summary: { invitesCreated: createdCount },
+    summary: {
+      invitesCreated: createdCount,
+      skippedExisting: invitesToCreate.length - createdCount,
+    },
     errors: parseErrors,
   };
 }

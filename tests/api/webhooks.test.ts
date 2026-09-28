@@ -86,13 +86,14 @@ describe("Signed Webhooks API with Retries & SSRF Defenses", () => {
         .post(`/api/events/${event.id}/webhooks`)
         .set(authHeader(organizer.token))
         .send({
-          url: "https://example.com/webhook",
+          // Public IP literal — avoids DNS in offline/sandboxed test runs.
+          url: "https://8.8.8.8/webhook",
           secret: "super-secret-signing-key",
           events: ["project.submitted", "team.created"],
         });
 
       expect(createRes.status).toBe(201);
-      expect(createRes.body.webhook.url).toBe("https://example.com/webhook");
+      expect(createRes.body.webhook.url).toBe("https://8.8.8.8/webhook");
       expect(createRes.body.webhook.secret).toBeDefined(); // Secret returned ONCE on creation
       expect(createRes.body.webhook.events).toEqual(["project.submitted", "team.created"]);
       const webhookId = createRes.body.webhook.id;
@@ -109,7 +110,7 @@ describe("Signed Webhooks API with Retries & SSRF Defenses", () => {
         .get(`/api/webhooks/${webhookId}`)
         .set(authHeader(organizer.token));
       expect(getRes.status).toBe(200);
-      expect(getRes.body.webhook.url).toBe("https://example.com/webhook");
+      expect(getRes.body.webhook.url).toBe("https://8.8.8.8/webhook");
       expect(getRes.body.webhook.secret).toBeUndefined(); // Secret omitted on GET
 
       // Update webhook
@@ -142,7 +143,7 @@ describe("Signed Webhooks API with Retries & SSRF Defenses", () => {
         .post(`/api/events/${event.id}/webhooks`)
         .set(authHeader(regularUser.token))
         .send({
-          url: "https://example.com/webhook",
+          url: "https://8.8.8.8/webhook",
           events: ["project.submitted"],
         });
       expect(res403.status).toBe(403);
@@ -275,6 +276,38 @@ describe("Signed Webhooks API with Retries & SSRF Defenses", () => {
       await processPendingDeliveries();
 
       expect(receivedRequests).toHaveLength(2);
+    });
+
+    it("claims each pending delivery once when workers run in parallel", async () => {
+      process.env.WEBHOOKS_ALLOW_PRIVATE = "true";
+      const { organizer, event } = await setupTestContext();
+      const port = await startMockReceiver();
+
+      const webhookRes = await request(app)
+        .post(`/api/events/${event.id}/webhooks`)
+        .set(authHeader(organizer.token))
+        .send({
+          url: `http://127.0.0.1:${port}/webhook-concurrency`,
+          events: ["ping"],
+        });
+      expect(webhookRes.status).toBe(201);
+      const webhookId = webhookRes.body.webhook.id;
+
+      await request(app)
+        .post(`/api/webhooks/${webhookId}/test`)
+        .set(authHeader(organizer.token));
+
+      await Promise.all([processPendingDeliveries(), processPendingDeliveries()]);
+
+      expect(receivedRequests).toHaveLength(1);
+
+      const delivRes = await request(app)
+        .get(`/api/webhooks/${webhookId}/deliveries`)
+        .set(authHeader(organizer.token));
+      expect(delivRes.status).toBe(200);
+      expect(delivRes.body.deliveries).toHaveLength(1);
+      expect(delivRes.body.deliveries[0].status).toBe("succeeded");
+      expect(delivRes.body.deliveries[0].attempts).toBe(1);
     });
   });
 });

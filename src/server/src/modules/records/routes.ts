@@ -11,6 +11,19 @@ import * as recordsService from "./records.service.js";
 
 export const recordsRouter = Router();
 
+/** Mounted at /api/me — keeps record id routes off the /api catch-all. */
+export const meRecordsRouter = Router();
+
+meRecordsRouter.get("/records", requireAuth, async (req, res) => {
+  const result = await recordsService.getUserRecords((req.user as { id: string }).id);
+  res.status(200).json({ records: result });
+});
+
+meRecordsRouter.get("/certificates", requireAuth, async (req, res) => {
+  const certificates = await recordsService.getUserCertificates((req.user as { id: string }).id);
+  res.status(200).json({ certificates });
+});
+
 // Public routes (no auth required)
 recordsRouter.get("/keys", async (_req, res) => {
   const result = await recordsService.getPublicSigningKeys();
@@ -29,17 +42,6 @@ recordsRouter.post(
 recordsRouter.get("/:id", async (req, res) => {
   const result = await recordsService.getRecordPublic(req.params.id as string);
   res.status(200).json(result);
-});
-
-// Authenticated routes
-recordsRouter.get("/me/records", requireAuth, async (req, res) => {
-  const result = await recordsService.getUserRecords((req.user as { id: string }).id);
-  res.status(200).json({ records: result });
-});
-
-recordsRouter.get("/me/certificates", requireAuth, async (req, res) => {
-  const certificates = await recordsService.getUserCertificates((req.user as { id: string }).id);
-  res.status(200).json({ certificates });
 });
 
 recordsRouter.post(

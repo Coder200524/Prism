@@ -182,7 +182,7 @@ export function ProjectPage() {
           </li>
         </ul>
       </Card>
-      <CommentsSection projectId={project.id} />
+      {project.status === "SUBMITTED" ? <CommentsSection projectId={project.id} /> : null}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { Router, type Request, type Response } from "express";
 import { getEmbedGallery } from "./embed.service.js";
 
-export const embedRouter = Router();
+/** JSON API only — mounted at `/api/embed`. */
+export const embedApiRouter = Router();
 
-embedRouter.get("/embed/gallery", async (req: Request, res: Response) => {
+embedApiRouter.get("/gallery", async (req: Request, res: Response) => {
   const result = await getEmbedGallery({
     eventId: req.query.eventId as string | undefined,
     trackId: req.query.trackId as string | undefined,
@@ -13,7 +14,10 @@ embedRouter.get("/embed/gallery", async (req: Request, res: Response) => {
   res.status(200).json(result);
 });
 
-embedRouter.get("/embed.js", (_req: Request, res: Response) => {
+/** Script asset only — mounted at `/` so `/embed.js` is public. */
+export const embedScriptRouter = Router();
+
+embedScriptRouter.get("/embed.js", (_req: Request, res: Response) => {
   const js = `(function() {
   var containers = document.querySelectorAll("[data-dogfood-gallery]");
   containers.forEach(function(container) {

@@ -8,8 +8,9 @@ import {
   seedPermissionScenario,
   type Scenario,
 } from "../helpers/index.js";
+import { prisma } from "../../src/server/src/lib/prisma.js";
 
-type Actor = "anonymous" | "participant" | "judgeA" | "judgeB" | "organizer" | "admin";
+type Actor = "anonymous" | "participant" | "judgeA" | "judgeB" | "organizer" | "admin" | "scopedKey" | "unscopedKey";
 
 const ACTORS: Actor[] = [
   "anonymous",
@@ -18,6 +19,8 @@ const ACTORS: Actor[] = [
   "judgeB",
   "organizer",
   "admin",
+  "scopedKey",
+  "unscopedKey",
 ];
 
 type MatrixCase = {
@@ -25,6 +28,7 @@ type MatrixCase = {
   method: "get" | "post" | "patch" | "put" | "delete";
   path: (s: Scenario) => string;
   body?: (s: Scenario) => unknown;
+  prepare?: (s: Scenario) => Promise<void>;
   expected: Record<Actor, number>;
 };
 
@@ -42,6 +46,10 @@ function tokenFor(scenario: Scenario, actor: Actor): string | null {
       return scenario.organizer.token;
     case "admin":
       return scenario.admin.token;
+    case "scopedKey":
+      return scenario.scopedKey;
+    case "unscopedKey":
+      return scenario.unscopedKey;
   }
 }
 
@@ -69,6 +77,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 200,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -82,6 +92,8 @@ describe("api/permission-matrix", () => {
         judgeB: 204,
         organizer: 204,
         admin: 204,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -95,6 +107,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -109,6 +123,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -132,6 +148,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 201,
         admin: 201,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -146,6 +164,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -159,6 +179,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -173,6 +195,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 201,
         admin: 201,
+        scopedKey: 201,
+        unscopedKey: 201,
       },
     },
     {
@@ -187,6 +211,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -200,6 +226,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 409,
         admin: 409,
+        scopedKey: 409,
+        unscopedKey: 409,
       },
     },
     {
@@ -214,6 +242,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 201,
         admin: 201,
+        scopedKey: 201,
+        unscopedKey: 201,
       },
     },
     {
@@ -228,6 +258,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -241,6 +273,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 204,
         admin: 204,
+        scopedKey: 204,
+        unscopedKey: 204,
       },
     },
     {
@@ -255,6 +289,8 @@ describe("api/permission-matrix", () => {
         judgeB: 409,
         organizer: 201,
         admin: 201,
+        scopedKey: 201,
+        unscopedKey: 201,
       },
     },
     {
@@ -268,6 +304,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 200,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -281,6 +319,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -294,6 +334,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -315,6 +357,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -329,6 +373,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -342,6 +388,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -355,6 +403,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -368,6 +418,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -401,6 +453,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -414,6 +468,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -428,6 +484,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 201,
         admin: 201,
+        scopedKey: 201,
+        unscopedKey: 201,
       },
     },
     {
@@ -442,6 +500,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -455,6 +515,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 204,
         admin: 204,
+        scopedKey: 204,
+        unscopedKey: 204,
       },
     },
     {
@@ -468,6 +530,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -481,6 +545,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -495,6 +561,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 409,
         admin: 409,
+        scopedKey: 409,
+        unscopedKey: 409,
       },
     },
     {
@@ -508,6 +576,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 204,
         admin: 204,
+        scopedKey: 204,
+        unscopedKey: 204,
       },
     },
     {
@@ -521,6 +591,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 403,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -534,6 +606,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -552,6 +626,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -565,6 +641,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 403,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -578,6 +656,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -591,6 +671,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -604,6 +686,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -617,6 +701,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -630,6 +716,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -643,6 +731,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -656,6 +746,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -669,6 +761,8 @@ describe("api/permission-matrix", () => {
         judgeB: 409,
         organizer: 200,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -682,6 +776,8 @@ describe("api/permission-matrix", () => {
         judgeB: 404,
         organizer: 404,
         admin: 404,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -695,6 +791,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 403,
         admin: 403,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -708,6 +806,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -721,6 +821,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -735,6 +837,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -748,6 +852,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -761,6 +867,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -774,6 +882,8 @@ describe("api/permission-matrix", () => {
         judgeB: 200,
         organizer: 200,
         admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
     {
@@ -787,12 +897,20 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
       name: "POST /api/events/:eventId/certificates/issue",
       method: "post",
       path: (s) => `/api/events/${s.eventId}/certificates/issue`,
+      prepare: async (s) => {
+        await prisma.event.update({
+          where: { id: s.eventId },
+          data: { resultsPublishedAt: s.now },
+        });
+      },
       expected: {
         anonymous: 401,
         participant: 403,
@@ -800,6 +918,8 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
       },
     },
     {
@@ -813,6 +933,40 @@ describe("api/permission-matrix", () => {
         judgeB: 403,
         organizer: 200,
         admin: 200,
+        scopedKey: 200,
+        unscopedKey: 200,
+      },
+    },
+    {
+      name: "POST /api/import",
+      method: "post",
+      path: () => `/api/import?dryRun=true`,
+      body: (s) => ({ event: { id: "evt_new", name: "New Event" } }),
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
+      },
+    },
+    {
+      name: "POST /api/events/:eventId/import.json",
+      method: "post",
+      path: (s) => `/api/events/${s.eventId}/import.json?dryRun=true`,
+      body: (s) => ({ event: { id: s.eventId, name: "Existing Event" } }),
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+        scopedKey: 403,
+        unscopedKey: 403,
       },
     },
   ];
@@ -822,6 +976,9 @@ describe("api/permission-matrix", () => {
       beforeEach(async () => {
         await resetDatabase();
         scenario = await seedPermissionScenario();
+        if (matrixCase.prepare) {
+          await matrixCase.prepare(scenario);
+        }
       });
 
       for (const actor of ACTORS) {

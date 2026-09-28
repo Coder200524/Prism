@@ -195,7 +195,39 @@ describe("Verifiable Judge Records API & Offline Verification", () => {
 
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.valid).toBe(true);
+
+    // Revoke the record
+    const admin = await createUser({
+      email: "admin@test.local",
+      name: "Admin",
+      platformRole: PlatformRole.ADMIN,
+    });
+
+    await request(app)
+      .post(`/api/records/${record!.id}/revoke`)
+      .set(authHeader(admin.token))
+      .send({ reason: "test revocation" });
+
+    // Verify should show it as revoked
+    const revokedRes = await request(app)
+      .post("/api/records/verify")
+      .send({ payload, signature, kid });
+    
+    expect(revokedRes.status).toBe(200);
+    expect(revokedRes.body.valid).toBe(false);
+    expect(revokedRes.body.revoked).toBe(true);
+
+    // Add trailing '=' to the signature and verify again
+    // The signature should still validate but the record must still be found and reported as revoked
+    const tamperedRes = await request(app)
+      .post("/api/records/verify")
+      .send({ payload, signature: signature + "=", kid });
+
+    expect(tamperedRes.status).toBe(200);
+    expect(tamperedRes.body.valid).toBe(false);
+    expect(tamperedRes.body.revoked).toBe(true);
   });
+
 
   it("lists own records at GET /api/me/records for authenticated user", async () => {
     await request(app)

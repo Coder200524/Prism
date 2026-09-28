@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
+import { PlatformRole } from "@prisma/client";
 import rateLimit from "express-rate-limit";
+import { resolveRequestEventId } from "../lib/api-key-scope.js";
 import { clock } from "../lib/clock.js";
 import { forbidden } from "../lib/http-error.js";
 import { prisma } from "../lib/prisma.js";
@@ -66,15 +68,6 @@ export async function authenticate(
       return;
     }
 
-    // Check eventId scope if specified on key
-    if (apiKey.eventId) {
-      const match = req.originalUrl.match(/\/api\/events\/([^/?#]+)/);
-      if (match && match[1] && match[1] !== apiKey.eventId) {
-        next(forbidden("event_mismatch", `API key is scoped to event ${apiKey.eventId}`));
-        return;
-      }
-    }
-
     // Update lastUsedAt asynchronously
     prisma.apiKey
       .update({
@@ -83,7 +76,7 @@ export async function authenticate(
       })
       .catch(() => {});
 
-    req.user = apiKey.owner;
+    req.user = { ...apiKey.owner, platformRole: PlatformRole.USER };
     req.apiKey = {
       id: apiKey.id,
       eventId: apiKey.eventId,
@@ -92,6 +85,42 @@ export async function authenticate(
       prefix: apiKey.prefix,
       scopes: apiKey.scopes,
     };
+
+    // API keys are explicitly blocked from managing API keys
+    if (req.path.includes("/api-keys")) {
+      next(forbidden("api_key_scope", "API keys cannot manage other API keys"));
+      return;
+    }
+
+    // Enforce event scope against URL, query, body, and ID-based resources.
+    try {
+      const targetEventId = await resolveRequestEventId(req);
+      if (!targetEventId) {
+        next(forbidden("api_key_scope", "API keys must target a specific event"));
+        return;
+      }
+
+      if (apiKey.eventId) {
+        if (targetEventId !== apiKey.eventId) {
+          next(forbidden("api_key_scope", `API key is scoped to event ${apiKey.eventId}`));
+          return;
+        }
+      } else {
+        const isOrg = await prisma.eventRole.findUnique({
+          where: {
+            userId_eventId_role: { userId: apiKey.ownerId, eventId: targetEventId, role: "ORGANIZER" }
+          }
+        });
+        if (!isOrg) {
+          next(forbidden("api_key_scope", `API key owner is not an organizer of event ${targetEventId}`));
+          return;
+        }
+      }
+    } catch (err) {
+      next(err);
+      return;
+    }
+
     next();
     return;
   }

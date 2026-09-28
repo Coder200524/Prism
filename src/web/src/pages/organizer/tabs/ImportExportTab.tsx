@@ -18,11 +18,15 @@ export function ImportExportTab({ eventId }: Props) {
   const [csvError, setCsvError] = useState<string | null>(null);
 
   const handleExportJson = () => {
-    window.open(`/api/events/${eventId}/export/json`, "_blank");
+    window.open(`/api/events/${eventId}/export.json`, "_blank");
   };
 
   const handleExportCsv = (type: "projects" | "judges" | "results") => {
-    window.open(`/api/events/${eventId}/export/csv?type=${type}`, "_blank");
+    if (type === "results") {
+      window.open(`/api/events/${eventId}/export.csv?type=results`, "_blank");
+      return;
+    }
+    window.open(`/api/events/${eventId}/export/${type}.csv`, "_blank");
   };
 
   const handleJsonFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

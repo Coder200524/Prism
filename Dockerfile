@@ -4,7 +4,7 @@ COPY package.json package-lock.json* ./
 COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/web/package.json src/web/
-RUN npm install --ignore-scripts
+RUN npm ci --ignore-scripts
 
 FROM deps AS build
 WORKDIR /app
@@ -26,7 +26,7 @@ COPY src/shared/package.json src/shared/
 COPY src/server/package.json src/server/
 COPY src/web/package.json src/web/
 COPY src/server/prisma src/server/prisma
-RUN npm install --omit=dev --ignore-scripts \
+RUN npm ci --omit=dev --ignore-scripts \
   && cd src/server && npx --no-install prisma generate
 COPY --from=build /app/src/shared/dist src/shared/dist
 COPY --from=build /app/src/server/dist src/server/dist

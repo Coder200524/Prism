@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateEvent } from "../../api/hooks/events";
 import { RequireRole } from "../../auth/RequireRole";
 import { Button } from "../../components/Button";
+import { DateTimeFields } from "../../components/DateTimeFields";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { Input } from "../../components/Input";
 import { Textarea } from "../../components/Textarea";
@@ -44,18 +45,20 @@ function EventFormContent() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <Input
-          label="Submissions open"
-          type="datetime-local"
+        <DateTimeFields
+          idPrefix="new-submissions-open"
+          dateLabel="Submissions open (date)"
+          timeLabel="Submissions open (time)"
           value={submissionsOpen}
-          onChange={(e) => setSubmissionsOpen(e.target.value)}
+          onChange={setSubmissionsOpen}
           required
         />
-        <Input
-          label="Submissions close"
-          type="datetime-local"
+        <DateTimeFields
+          idPrefix="new-submissions-close"
+          dateLabel="Submissions close (date)"
+          timeLabel="Submissions close (time)"
           value={submissionsClose}
-          onChange={(e) => setSubmissionsClose(e.target.value)}
+          onChange={setSubmissionsClose}
           required
         />
         <Input
