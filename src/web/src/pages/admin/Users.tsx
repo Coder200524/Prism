@@ -9,14 +9,14 @@ function AdminUsersContent() {
   const usersQuery = useAdminUsers();
   const updateRole = useUpdateUserRole();
 
-  if (usersQuery.isLoading) return <p className="text-slate-600">Loading users…</p>;
+  if (usersQuery.isLoading) return <p className="text-df-dim">Loading users…</p>;
   if (usersQuery.isError) return <ErrorMessage error={usersQuery.error} />;
 
   const users = usersQuery.data?.users ?? [];
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Admin — users</h1>
+      <h1 className="text-2xl font-semibold text-df-text">Admin — users</h1>
       {updateRole.isError ? <ErrorMessage error={updateRole.error} /> : null}
       <Table
         rows={users}

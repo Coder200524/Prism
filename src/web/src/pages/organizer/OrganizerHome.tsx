@@ -10,7 +10,7 @@ import { ErrorMessage } from "../../components/ErrorMessage";
 function OrganizerHomeContent() {
   const eventsQuery = useEvents();
 
-  if (eventsQuery.isLoading) return <p className="text-slate-600">Loading…</p>;
+  if (eventsQuery.isLoading) return <p className="text-df-dim">Loading…</p>;
   if (eventsQuery.isError) return <ErrorMessage error={eventsQuery.error} />;
 
   const events = eventsQuery.data?.events ?? [];
@@ -18,7 +18,7 @@ function OrganizerHomeContent() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900">Organize</h1>
+        <h1 className="text-2xl font-semibold text-df-text">Organize</h1>
         <Link to="/organize/new">
           <Button>New event</Button>
         </Link>
@@ -32,7 +32,7 @@ function OrganizerHomeContent() {
               <div>
                 <Link
                   to={`/organize/${event.id}`}
-                  className="text-lg font-semibold text-indigo-600 hover:underline"
+                  className="text-lg font-semibold text-df-pink hover:text-df-cyan transition-colors font-mono"
                 >
                   {event.name}
                 </Link>

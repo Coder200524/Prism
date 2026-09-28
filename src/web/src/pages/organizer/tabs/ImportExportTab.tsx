@@ -124,7 +124,7 @@ export function ImportExportTab({ eventId }: Props) {
   return (
     <div className="space-y-8">
       {/* Export Section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">Export Event Data</h2>
         <p className="mt-1 text-sm text-stone-600">
           Download event structural data, submissions, scores, and normalized results.
@@ -134,28 +134,28 @@ export function ImportExportTab({ eventId }: Props) {
           <button
             type="button"
             onClick={handleExportJson}
-            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-df-text hover:bg-stone-800"
           >
             Export Event JSON
           </button>
           <button
             type="button"
             onClick={() => handleExportCsv("projects")}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
           >
             Export Projects CSV
           </button>
           <button
             type="button"
             onClick={() => handleExportCsv("judges")}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
           >
             Export Judges CSV
           </button>
           <button
             type="button"
             onClick={() => handleExportCsv("results")}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
           >
             Export Results CSV
           </button>
@@ -163,7 +163,7 @@ export function ImportExportTab({ eventId }: Props) {
       </div>
 
       {/* JSON Import Section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">Bulk Import (JSON)</h2>
         <p className="mt-1 text-sm text-stone-600">
           Import teams and projects in bulk from an exported JSON schema.
@@ -185,13 +185,13 @@ export function ImportExportTab({ eventId }: Props) {
           <textarea
             rows={5}
             placeholder='Paste JSON here (e.g. { "teams": [...] })'
-            className="w-full rounded-md border border-stone-300 p-3 font-mono text-xs focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-white/20 bg-white/5 backdrop-blur-md text-df-text placeholder-white/50 p-3 font-mono text-xs shadow-[0_4px_30px_rgba(0,0,0,0.1)] focus:bg-white/10 focus:border-df-cyan focus:outline-none focus:ring-1 focus:ring-df-cyan"
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
           />
 
           {jsonError && (
-            <div className="rounded-md bg-red-50 p-3 text-xs text-red-700 border border-red-200">
+            <div className="rounded-md bg-df-panel p-3 text-xs text-red-700 border border-red-200">
               {jsonError}
             </div>
           )}
@@ -221,7 +221,7 @@ export function ImportExportTab({ eventId }: Props) {
               type="button"
               onClick={handleDryRunJson}
               disabled={importJsonMutation.isPending || !jsonText.trim()}
-              className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+              className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
             >
               {importJsonMutation.isPending ? "Validating..." : "Preview (Dry Run)"}
             </button>
@@ -229,7 +229,7 @@ export function ImportExportTab({ eventId }: Props) {
               type="button"
               onClick={handleCommitJson}
               disabled={importJsonMutation.isPending || !jsonText.trim()}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink disabled:opacity-50"
             >
               Commit Import
             </button>
@@ -238,7 +238,7 @@ export function ImportExportTab({ eventId }: Props) {
       </div>
 
       {/* CSV Judges Import Section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">Bulk Import Judges (CSV)</h2>
         <p className="mt-1 text-sm text-stone-600">
           Upload or paste CSV content with columns: <code>email, name, tracks</code>.
@@ -260,13 +260,13 @@ export function ImportExportTab({ eventId }: Props) {
           <textarea
             rows={5}
             placeholder="email,name,tracks&#10;judge1@example.com,Alice Judge,AI,Web"
-            className="w-full rounded-md border border-stone-300 p-3 font-mono text-xs focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-white/20 bg-white/5 backdrop-blur-md text-df-text placeholder-white/50 p-3 font-mono text-xs shadow-[0_4px_30px_rgba(0,0,0,0.1)] focus:bg-white/10 focus:border-df-cyan focus:outline-none focus:ring-1 focus:ring-df-cyan"
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
           />
 
           {csvError && (
-            <div className="rounded-md bg-red-50 p-3 text-xs text-red-700 border border-red-200">
+            <div className="rounded-md bg-df-panel p-3 text-xs text-red-700 border border-red-200">
               {csvError}
             </div>
           )}
@@ -295,7 +295,7 @@ export function ImportExportTab({ eventId }: Props) {
               type="button"
               onClick={handleDryRunCsv}
               disabled={importCsvJudgesMutation.isPending || !csvText.trim()}
-              className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+              className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
             >
               {importCsvJudgesMutation.isPending ? "Validating..." : "Preview (Dry Run)"}
             </button>
@@ -303,7 +303,7 @@ export function ImportExportTab({ eventId }: Props) {
               type="button"
               onClick={handleCommitCsv}
               disabled={importCsvJudgesMutation.isPending || !csvText.trim()}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink disabled:opacity-50"
             >
               Commit Import
             </button>

@@ -24,7 +24,7 @@ function phaseTone(phase: string): "slate" | "indigo" | "green" | "amber" | "red
 export function EventsPage() {
   const eventsQuery = useEvents();
 
-  if (eventsQuery.isLoading) return <p className="text-slate-600">Loading events…</p>;
+  if (eventsQuery.isLoading) return <p className="text-df-dim font-mono">Loading events…</p>;
   if (eventsQuery.isError) return <ErrorMessage error={eventsQuery.error} />;
 
   const events = eventsQuery.data?.events ?? [];
@@ -34,7 +34,7 @@ export function EventsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Events</h1>
+      <h1 className="text-2xl font-display uppercase tracking-widest text-df-text">Events</h1>
       <div className="grid gap-4">
         {events.map((event) => (
           <Card key={event.id}>
@@ -42,18 +42,18 @@ export function EventsPage() {
               <div>
                 <Link
                   to={`/events/${event.id}`}
-                  className="text-lg font-semibold text-indigo-600 hover:underline"
+                  className="text-lg font-bold text-df-pink hover:text-df-cyan transition-colors font-mono"
                 >
                   {event.name}
                 </Link>
-                <p className="mt-1 text-sm text-slate-600 line-clamp-2">{event.description || "—"}</p>
+                <p className="mt-1 text-sm text-df-dim line-clamp-2 font-mono">{event.description || "—"}</p>
               </div>
               <Badge tone={phaseTone(event.phase)}>{event.phase}</Badge>
             </div>
-            <p className="mt-3 text-sm text-slate-600">
-              Submissions: <DateTime value={event.submissionsOpen} /> →{" "}
-              <DateTime value={event.submissionsClose} />
-            </p>
+            <div className="mt-3 text-sm text-df-dim font-mono">
+              <div>Submission starts at: <DateTime value={event.submissionsOpen} /></div>
+              <div>Deadline: <DateTime value={event.submissionsClose} /></div>
+            </div>
           </Card>
         ))}
       </div>

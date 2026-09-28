@@ -33,7 +33,7 @@ export function CertificatePage() {
         <p className="mt-2 text-stone-600">
           {(error as Error)?.message || "The requested certificate record could not be found."}
         </p>
-        <Link to="/" className="mt-4 inline-block text-indigo-600 hover:underline">
+        <Link to="/" className="mt-4 inline-block text-df-pink hover:text-df-cyan transition-colors font-mono">
           Return Home
         </Link>
       </div>
@@ -74,7 +74,7 @@ export function CertificatePage() {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => window.print()}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink"
           >
             Download PDF / Print
           </button>
@@ -91,7 +91,7 @@ export function CertificatePage() {
         
         {isRevoked && (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-900/10 backdrop-blur-[1px]">
-            <div className="rotate-[-12deg] rounded-lg border-4 border-red-600 px-6 py-2 text-3xl font-extrabold tracking-widest text-red-600 uppercase">
+            <div className="rotate-[-12deg] rounded-lg border-4 border-red-600 px-6 py-2 text-3xl font-extrabold tracking-widest text-df-pink uppercase">
               REVOKED
             </div>
           </div>
@@ -100,13 +100,13 @@ export function CertificatePage() {
         <div className="flex h-full flex-col justify-between text-center">
           {/* Header */}
           <div>
-            <div className="text-xs font-bold tracking-widest text-indigo-700 uppercase sm:text-sm">
+            <div className="text-xs font-bold tracking-widest text-df-pink uppercase sm:text-sm">
               DOGFOOD HACKATHON PORTAL
             </div>
             <h1 className="mt-3 text-3xl font-serif font-bold text-stone-900 sm:text-4xl">
               {title}
             </h1>
-            <div className="mx-auto mt-2 h-1 w-24 bg-indigo-600"></div>
+            <div className="mx-auto mt-2 h-1 w-24 bg-df-pink"></div>
           </div>
 
           {/* Recipient */}
@@ -143,7 +143,7 @@ export function CertificatePage() {
                 <img
                   src={qrDataUrl}
                   alt="Verification QR Code"
-                  className="h-20 w-20 rounded border border-stone-200 bg-white p-1"
+                  className="h-20 w-20 rounded border border-stone-200 bg-df-bg p-1"
                 />
               )}
               <div className="text-right">
@@ -152,7 +152,7 @@ export function CertificatePage() {
                   href={verifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-mono font-medium text-indigo-600 underline"
+                  className="text-xs font-mono font-medium text-df-pink underline"
                 >
                   /verify/{record.id}
                 </a>

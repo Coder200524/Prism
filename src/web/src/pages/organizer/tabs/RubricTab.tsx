@@ -71,7 +71,7 @@ export function RubricTab({ eventId }: { eventId: string }) {
     setMessage("Rubric saved.");
   }
 
-  if (criteriaQuery.isLoading) return <p className="text-slate-600">Loading rubric…</p>;
+  if (criteriaQuery.isLoading) return <p className="text-df-dim">Loading rubric…</p>;
   if (criteriaQuery.isError) return <ErrorMessage error={criteriaQuery.error} />;
 
   return (
@@ -81,7 +81,7 @@ export function RubricTab({ eventId }: { eventId: string }) {
       ) : null}
       <form onSubmit={(e) => void onSave(e)} className="space-y-4">
         {rows.map((row, index) => (
-          <div key={`row-${index}`} className="space-y-3 rounded border border-slate-200 p-3">
+          <div key={`row-${index}`} className="space-y-3 rounded border border-df-border p-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Input
                 label="Key"
@@ -134,7 +134,7 @@ export function RubricTab({ eventId }: { eventId: string }) {
           </div>
         ))}
 
-        <p className={`text-sm ${weightsOk ? "text-green-700" : "text-amber-700"}`}>
+        <p className={`text-sm ${weightsOk ? "text-df-cyan" : "text-amber-700"}`}>
           Weight sum: {weightSum} / 100
         </p>
 
@@ -147,7 +147,7 @@ export function RubricTab({ eventId }: { eventId: string }) {
           </Button>
         </div>
         {putCriteria.isError ? <ErrorMessage error={putCriteria.error} /> : null}
-        {message ? <p className="text-sm text-green-700">{message}</p> : null}
+        {message ? <p className="text-sm text-df-cyan">{message}</p> : null}
       </form>
     </Card>
   );

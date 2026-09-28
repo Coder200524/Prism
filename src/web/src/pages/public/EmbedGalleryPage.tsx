@@ -67,7 +67,7 @@ export function EmbedGalleryPage() {
   return (
     <div
       className={`p-4 font-sans transition-colors ${
-        isDark ? "bg-stone-900 text-stone-100" : "bg-white text-stone-900"
+        isDark ? "bg-stone-900 text-stone-100" : "bg-df-bg text-stone-900"
       }`}
     >
       {isLoading ? (
@@ -91,7 +91,7 @@ export function EmbedGalleryPage() {
             >
               <div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className={`font-semibold ${isDark ? "text-indigo-400" : "text-indigo-600"}`}>
+                  <span className={`font-semibold ${isDark ? "text-indigo-400" : "text-df-pink"}`}>
                     {project.teamName}
                   </span>
                   {project.trackName && (
@@ -110,7 +110,7 @@ export function EmbedGalleryPage() {
                     href={`/projects/${project.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:text-df-cyan transition-colors font-mono"
                   >
                     {project.title}
                   </a>
@@ -131,7 +131,7 @@ export function EmbedGalleryPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`font-semibold ${
-                    isDark ? "text-indigo-400 hover:text-indigo-300" : "text-indigo-600 hover:text-indigo-800"
+                    isDark ? "text-indigo-400 hover:text-indigo-300" : "text-df-pink hover:text-indigo-800"
                   }`}
                 >
                   View Project &rarr;

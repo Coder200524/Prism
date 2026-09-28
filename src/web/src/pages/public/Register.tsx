@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
+import { Input } from "../../components/Input";
 
 export function RegisterPage() {
   const { register, isAuthenticated } = useAuth();
@@ -31,55 +32,53 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-semibold text-slate-900">Register</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Already have an account?{" "}
-        <Link to="/login" className="text-indigo-600 hover:underline">
-          Log in
-        </Link>
-      </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Name</span>
-          <input
+    <div className="mx-auto max-w-md w-full mt-12 mb-24">
+      <div className="bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.37)] rounded-3xl p-10">
+        <h1 className="text-3xl font-display uppercase tracking-widest text-df-text mb-2">Register</h1>
+        
+        <form onSubmit={onSubmit} className="mt-8 space-y-6">
+          <Input
+            label="Name"
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
           />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Email</span>
-          <input
+          <Input
+            label="Email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
           />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Password (min 8)</span>
-          <input
+          <Input
+            label="Password (min 8)"
             type="password"
             required
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
           />
-        </label>
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          {submitting ? "Creating…" : "Create account"}
-        </button>
-      </form>
+          {error ? <p className="text-sm text-df-pink">{error}</p> : null}
+          
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-4 w-full rounded-xl bg-[#c70b47] py-3.5 text-sm font-semibold font-mono text-white tracking-widest hover:bg-df-pink transition-colors disabled:opacity-50"
+          >
+            {submitting ? "Creating…" : "Create account"}
+          </button>
+        </form>
+        
+        <div className="mt-8 text-center">
+          <p className="text-xs font-mono text-df-dim">
+            Already have an account?{" "}
+            <Link to="/login" className="text-df-text hover:text-df-cyan transition-colors font-semibold">
+              Log in
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

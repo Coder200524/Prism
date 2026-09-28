@@ -37,7 +37,7 @@ function EventFormContent() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">New event</h1>
+      <h1 className="text-2xl font-semibold text-df-text">New event</h1>
       <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
         <Textarea

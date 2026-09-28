@@ -53,7 +53,7 @@ export function SettingsTab({ eventId }: { eventId: string }) {
     setVotingClose(toLocalInput(event.votingClose));
   }, [eventQuery.data]);
 
-  if (eventQuery.isLoading) return <p className="text-slate-600">Loading settings…</p>;
+  if (eventQuery.isLoading) return <p className="text-df-dim">Loading settings…</p>;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
   const event = eventQuery.data?.event;
   if (!event) return null;
@@ -117,8 +117,8 @@ export function SettingsTab({ eventId }: { eventId: string }) {
             onChange={setSubmissionsClose}
             required
           />
-          <div className="rounded border border-slate-200 p-3">
-            <p className="mb-2 text-sm font-medium text-slate-700">
+          <div className="rounded border border-df-border p-3">
+            <p className="mb-2 text-sm font-medium text-df-text">
               Community voting (optional)
             </p>
             <div className="space-y-3">
@@ -137,15 +137,15 @@ export function SettingsTab({ eventId }: { eventId: string }) {
                 onChange={setVotingClose}
               />
               {votingError ? (
-                <p className="text-sm text-red-600">{votingError}</p>
+                <p className="text-sm text-df-pink">{votingError}</p>
               ) : null}
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-df-dim">
                 Leave both blank to disable community voting. Voting open must be on or after submissions close.
               </p>
             </div>
           </div>
           {updateEvent.isError ? <ErrorMessage error={updateEvent.error} /> : null}
-          {message ? <p className="text-sm text-green-700">{message}</p> : null}
+          {message ? <p className="text-sm text-df-cyan">{message}</p> : null}
           <Button type="submit" disabled={updateEvent.isPending}>
             Save settings
           </Button>
@@ -156,7 +156,7 @@ export function SettingsTab({ eventId }: { eventId: string }) {
         title="Publish"
         actions={
           event.publishedAt ? (
-            <span className="text-sm text-green-700">Published</span>
+            <span className="text-sm text-df-cyan">Published</span>
           ) : (
             <Button
               type="button"
@@ -169,7 +169,7 @@ export function SettingsTab({ eventId }: { eventId: string }) {
         }
       >
         {publishEvent.isError ? <ErrorMessage error={publishEvent.error} /> : null}
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-df-dim">
           Published events appear in the public list and gallery.
         </p>
       </Card>

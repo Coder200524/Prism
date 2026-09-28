@@ -31,7 +31,7 @@ export function ResultsTab({ eventId }: { eventId: string }) {
     }
   }
 
-  if (resultsQuery.isLoading) return <p className="text-slate-600">Loading results…</p>;
+  if (resultsQuery.isLoading) return <p className="text-df-dim">Loading results…</p>;
   if (resultsQuery.isError) return <ErrorMessage error={resultsQuery.error} />;
   const data = resultsQuery.data;
   if (!data) return null;
@@ -63,7 +63,7 @@ export function ResultsTab({ eventId }: { eventId: string }) {
           )
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-df-dim">
           {data.published
             ? "Results are public. Publishing also closes judging."
             : "Results are organizer-only until published."}

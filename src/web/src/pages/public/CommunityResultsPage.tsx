@@ -14,7 +14,7 @@ export function CommunityResultsPage() {
   const resultsQuery = useCommunityResults(eventId);
 
   if (eventQuery.isLoading || resultsQuery.isLoading)
-    return <p className="text-slate-600">Loading…</p>;
+    return <p className="text-df-dim">Loading…</p>;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
 
   const event = eventQuery.data?.event;
@@ -28,10 +28,10 @@ export function CommunityResultsPage() {
       return (
         <div className="space-y-4">
           <div>
-            <Link to={`/events/${eventId}`} className="text-sm text-indigo-600 hover:underline">
-              Back to event
+            <Link to={`/events/${eventId}`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+              ← Back to event
             </Link>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">Community Results</h1>
+            <h1 className="mt-2 text-2xl font-semibold text-df-text">Community Results</h1>
           </div>
           <EmptyState
             title="Results are hidden"
@@ -52,12 +52,12 @@ export function CommunityResultsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to={`/events/${eventId}`} className="text-sm text-indigo-600 hover:underline">
-          Back to event
+        <Link to={`/events/${eventId}`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to event
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Community Results</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">Community Results</h1>
         {votingClosed && event.votingClose ? (
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-df-dim">
             Voting closed: <DateTime value={event.votingClose} />
           </p>
         ) : null}

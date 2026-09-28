@@ -16,20 +16,20 @@ function AcceptJudgeInviteContent() {
   const previewQuery = useJudgeInvitePreview(token);
   const accept = useAcceptJudgeInvite(token);
 
-  if (previewQuery.isLoading) return <p className="text-slate-600">Loading invite…</p>;
+  if (previewQuery.isLoading) return <p className="text-df-dim">Loading invite…</p>;
   if (previewQuery.isError) return <ErrorMessage error={previewQuery.error} />;
   const preview = previewQuery.data;
   if (!preview) return null;
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Judge invite</h1>
+      <h1 className="text-2xl font-semibold text-df-text">Judge invite</h1>
       <Card>
-        <p className="text-slate-800">
+        <p className="text-df-text">
           You are invited to judge <span className="font-medium">{preview.eventName}</span>
         </p>
-        <p className="mt-2 text-sm text-slate-600">Invite email: {preview.email}</p>
-        <p className="mt-1 text-sm text-slate-600">Signed in as: {user?.email}</p>
+        <p className="mt-2 text-sm text-df-dim">Invite email: {preview.email}</p>
+        <p className="mt-1 text-sm text-df-dim">Signed in as: {user?.email}</p>
       </Card>
       {accept.isError ? <ErrorMessage error={accept.error} /> : null}
       <Button
@@ -41,7 +41,7 @@ function AcceptJudgeInviteContent() {
       >
         {accept.isPending ? "Accepting…" : "Accept invite"}
       </Button>
-      <Link to="/" className="block text-sm text-indigo-600 hover:underline">
+      <Link to="/" className="block text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
         Cancel
       </Link>
     </div>

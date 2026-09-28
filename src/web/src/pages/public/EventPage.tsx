@@ -18,7 +18,7 @@ function VotingCard({ eventId, votingOpen, votingClose }: { eventId: string; vot
 
   return (
     <Card title="Community voting">
-      <div className="space-y-2 text-sm text-slate-600">
+      <div className="space-y-2 text-sm text-df-dim">
         <p>
           Opens: <DateTime value={votingOpen} />
         </p>
@@ -36,13 +36,13 @@ function VotingCard({ eventId, votingOpen, votingClose }: { eventId: string; vot
           </>
         ) : isClosed ? (
           <>
-            <p className="font-medium text-slate-700">Voting closed</p>
-            <Link to={`/events/${eventId}/community-results`} className="text-indigo-600 hover:underline">
+            <p className="font-medium text-df-text">Voting closed</p>
+            <Link to={`/events/${eventId}/community-results`} className="text-df-pink hover:text-df-cyan transition-colors font-mono">
               View community results
             </Link>
           </>
         ) : (
-          <p className="font-medium text-slate-700">
+          <p className="font-medium text-df-text">
             Opens <DateTime value={votingOpen} />
           </p>
         )}
@@ -56,7 +56,7 @@ export function EventPage() {
   const { isAuthenticated, hasEventRole, hasPlatformRole } = useAuth();
   const eventQuery = useEvent(eventId);
 
-  if (eventQuery.isLoading) return <p className="text-slate-600">Loading event…</p>;
+  if (eventQuery.isLoading) return <p className="text-df-dim">Loading event…</p>;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
   const event = eventQuery.data?.event;
   if (!event) return <EmptyState title="Event not found" />;
@@ -68,7 +68,7 @@ export function EventPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{event.name}</h1>
+          <h1 className="text-2xl font-semibold text-df-text">{event.name}</h1>
           <div className="mt-2">
             <Badge>{event.phase}</Badge>
           </div>
@@ -96,8 +96,8 @@ export function EventPage() {
       </div>
 
       <Card title="About">
-        <p className="whitespace-pre-wrap text-slate-700">{event.description || "No description."}</p>
-        <div className="mt-4 space-y-1 text-sm text-slate-600">
+        <p className="whitespace-pre-wrap text-df-text">{event.description || "No description."}</p>
+        <div className="mt-4 space-y-1 text-sm text-df-dim">
           <p>
             Opens: <DateTime value={event.submissionsOpen} />
           </p>
@@ -119,9 +119,9 @@ export function EventPage() {
           <ul className="space-y-2 text-sm">
             {event.tracks.map((track) => (
               <li key={track.id}>
-                <span className="font-medium text-slate-900">{track.name}</span>
+                <span className="font-medium text-df-text">{track.name}</span>
                 {track.description ? (
-                  <span className="text-slate-600"> — {track.description}</span>
+                  <span className="text-df-dim"> — {track.description}</span>
                 ) : null}
               </li>
             ))}
@@ -136,8 +136,8 @@ export function EventPage() {
           <ul className="space-y-2 text-sm">
             {event.prizes.map((prize) => (
               <li key={prize.id}>
-                <span className="font-medium text-slate-900">{prize.name}</span>
-                {prize.value ? <span className="text-slate-600"> ({prize.value})</span> : null}
+                <span className="font-medium text-df-text">{prize.name}</span>
+                {prize.value ? <span className="text-df-dim"> ({prize.value})</span> : null}
               </li>
             ))}
           </ul>

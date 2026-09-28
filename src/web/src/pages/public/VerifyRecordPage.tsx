@@ -58,14 +58,14 @@ export function VerifyRecordPage() {
   if (isError || !data?.record) {
     return (
       <div className="mx-auto max-w-lg py-12 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-df-pink">
           ✕
         </div>
         <h2 className="mt-4 text-xl font-bold text-stone-900">Record Not Found</h2>
         <p className="mt-2 text-stone-600">
           {(error as Error)?.message || "No record found with the provided identifier."}
         </p>
-        <Link to="/" className="mt-6 inline-block text-sm font-medium text-indigo-600 hover:underline">
+        <Link to="/" className="mt-6 inline-block text-sm font-medium text-df-pink hover:text-df-cyan transition-colors font-mono">
           Return to Portal Home
         </Link>
       </div>
@@ -77,7 +77,7 @@ export function VerifyRecordPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-stone-200 pb-4">
           <div>
             <h1 className="text-xl font-bold text-stone-900">Record Verification</h1>
@@ -158,11 +158,11 @@ export function VerifyRecordPage() {
           <div className="mt-4 pt-4 border-t border-stone-200 flex justify-between items-center">
             <Link
               to={`/certificates/${record.id}`}
-              className="text-sm font-medium text-indigo-600 hover:underline"
+              className="text-sm font-medium text-df-pink hover:text-df-cyan transition-colors font-mono"
             >
               View Certificate &rarr;
             </Link>
-            <Link to="/" className="text-xs text-stone-500 hover:underline">
+            <Link to="/" className="text-xs text-stone-500 hover:text-df-cyan transition-colors font-mono">
               Portal Home
             </Link>
           </div>

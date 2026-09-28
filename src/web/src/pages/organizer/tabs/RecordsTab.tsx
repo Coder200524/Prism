@@ -52,7 +52,7 @@ export function RecordsTab({ eventId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-stone-900">
@@ -68,7 +68,7 @@ export function RecordsTab({ eventId }: Props) {
               type="button"
               onClick={handleIssueCertificates}
               disabled={issueCertificatesMutation.isPending}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink disabled:opacity-50"
             >
               {issueCertificatesMutation.isPending ? "Issuing..." : "Issue Certificates Now"}
             </button>
@@ -85,7 +85,7 @@ export function RecordsTab({ eventId }: Props) {
                     alert(err.message || "Key rotation failed (admin only).");
                   });
               }}
-              className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+              className="rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
             >
               Rotate signing key
             </button>
@@ -93,7 +93,7 @@ export function RecordsTab({ eventId }: Props) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-stone-500 mb-4">
           Issued Certificates ({certificatesQuery.data?.certificates.length || 0})
         </h3>
@@ -133,20 +133,20 @@ export function RecordsTab({ eventId }: Props) {
                   <div className="flex items-center gap-3">
                     <Link
                       to={`/certificates/${rec.id}`}
-                      className="text-xs font-medium text-indigo-600 hover:underline"
+                      className="text-xs font-medium text-df-pink hover:text-df-cyan transition-colors font-mono"
                     >
                       View Certificate
                     </Link>
                     <Link
                       to={`/verify/${rec.id}`}
-                      className="text-xs font-medium text-stone-600 hover:underline"
+                      className="text-xs font-medium text-stone-600 hover:text-df-cyan transition-colors font-mono"
                     >
                       Verify
                     </Link>
                     {!rec.revokedAt && (
                       <button
                         type="button"
-                        className="text-xs font-medium text-red-600 hover:underline"
+                        className="text-xs font-medium text-df-pink hover:text-df-cyan transition-colors font-mono"
                         onClick={() => {
                           setRevokingRecordId(rec.id);
                           setRevokeReason("");
@@ -166,7 +166,7 @@ export function RecordsTab({ eventId }: Props) {
                 )}
 
                 {revokingRecordId === rec.id && (
-                  <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-3 space-y-2">
+                  <div className="mt-2 rounded-md border border-red-200 bg-df-panel p-3 space-y-2">
                     <label className="block text-xs font-semibold text-red-900">
                       Reason for Revocation
                     </label>
@@ -180,14 +180,14 @@ export function RecordsTab({ eventId }: Props) {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                        className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-df-text hover:bg-red-700"
                         onClick={() => handleConfirmRevoke(rec.id)}
                       >
                         Confirm Revocation
                       </button>
                       <button
                         type="button"
-                        className="rounded border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                        className="rounded border border-stone-300 bg-df-bg px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
                         onClick={() => setRevokingRecordId(null)}
                       >
                         Cancel

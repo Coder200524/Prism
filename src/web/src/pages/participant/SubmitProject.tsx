@@ -47,7 +47,7 @@ function SubmitProjectForm() {
   }, [projectQuery.data]);
 
   if (teamsQuery.isLoading || eventQuery.isLoading || (projectId && projectQuery.isLoading)) {
-    return <p className="text-slate-600">Loading project form…</p>;
+    return <p className="text-df-dim">Loading project form…</p>;
   }
   if (teamsQuery.isError) return <ErrorMessage error={teamsQuery.error} />;
   if (!team) return <ErrorMessage error={new Error("Team not found")} />;
@@ -127,15 +127,15 @@ function SubmitProjectForm() {
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <div>
-        <Link to="/teams" className="text-sm text-indigo-600 hover:underline">
-          Back to my teams
+        <Link to="/teams" className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to my teams
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">{team.name} — project</h1>
-        <p className="text-sm text-slate-600">{event?.name}</p>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">{team.name} — project</h1>
+        <p className="text-sm text-df-dim">{event?.name}</p>
       </div>
 
       {closed ? (
-        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="rounded border border-amber-200 bg-df-panel px-3 py-2 text-sm text-amber-900">
           Submissions closed
         </p>
       ) : null}
@@ -178,8 +178,8 @@ function SubmitProjectForm() {
         />
 
         {actionError ? <ErrorMessage error={actionError} /> : null}
-        {message ? <p className="text-sm text-green-700">{message}</p> : null}
-        {project ? <p className="text-sm text-slate-600">Status: {project.status}</p> : null}
+        {message ? <p className="text-sm text-df-cyan">{message}</p> : null}
+        {project ? <p className="text-sm text-df-dim">Status: {project.status}</p> : null}
 
         {!closed ? (
           <div className="flex flex-wrap gap-2">

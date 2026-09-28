@@ -10,17 +10,17 @@ import { DateTime } from "../../lib/datetime";
 function MyScoresContent() {
   const scoresQuery = useMyJudgeScores();
 
-  if (scoresQuery.isLoading) return <p className="text-slate-600">Loading scores…</p>;
+  if (scoresQuery.isLoading) return <p className="text-df-dim">Loading scores…</p>;
   if (scoresQuery.isError) return <ErrorMessage error={scoresQuery.error} />;
   const items = scoresQuery.data?.items ?? [];
 
   return (
     <div className="space-y-4">
       <div>
-        <Link to="/judge" className="text-sm text-indigo-600 hover:underline">
-          Back to judging
+        <Link to="/judge" className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to judging
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">My scores</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">My scores</h1>
       </div>
 
       {items.length === 0 ? (
@@ -36,7 +36,7 @@ function MyScoresContent() {
               render: (row) => (
                 <Link
                   to={`/judge/assignments/${row.assignmentId}`}
-                  className="text-indigo-600 hover:underline"
+                  className="text-df-pink hover:text-df-cyan transition-colors font-mono"
                 >
                   {row.projectTitle}
                 </Link>
