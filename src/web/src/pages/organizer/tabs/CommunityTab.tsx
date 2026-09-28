@@ -19,25 +19,25 @@ import { formatDateTime } from "../../../lib/datetime";
 function TurnoutCard({ eventId }: { eventId: string }) {
   const turnoutQuery = useCommunityTurnout(eventId, true);
 
-  if (turnoutQuery.isLoading) return <p className="text-slate-600">Loading turnout…</p>;
+  if (turnoutQuery.isLoading) return <p className="text-df-dim">Loading turnout…</p>;
   if (turnoutQuery.isError) return <ErrorMessage error={turnoutQuery.error} />;
   const t = turnoutQuery.data;
   if (!t) return null;
 
   return (
     <Card title="Turnout">
-      <p className="mb-2 text-xs text-slate-500">Auto-refreshes every 5 seconds</p>
+      <p className="mb-2 text-xs text-df-dim">Auto-refreshes every 5 seconds</p>
       <dl className="grid grid-cols-3 gap-4 text-sm">
         <div>
-          <dt className="text-slate-500">Total votes</dt>
+          <dt className="text-df-dim">Total votes</dt>
           <dd className="text-lg font-semibold">{t.totalVotes}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Unique voters</dt>
+          <dt className="text-df-dim">Unique voters</dt>
           <dd className="text-lg font-semibold">{t.uniqueVoters}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Flagged</dt>
+          <dt className="text-df-dim">Flagged</dt>
           <dd className="text-lg font-semibold">{t.flaggedCount}</dd>
         </div>
       </dl>
@@ -51,7 +51,7 @@ function FlaggedVotesCard({ eventId }: { eventId: string }) {
   const restoreVote = useRestoreVote(eventId);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  if (flaggedQuery.isLoading) return <p className="text-slate-600">Loading flagged votes…</p>;
+  if (flaggedQuery.isLoading) return <p className="text-df-dim">Loading flagged votes…</p>;
   if (flaggedQuery.isError) return <ErrorMessage error={flaggedQuery.error} />;
   const votes = flaggedQuery.data ?? [];
 
@@ -144,7 +144,7 @@ function CommentModerationCard({ eventId }: { eventId: string }) {
   const unhideComment = useUnhideComment(eventId);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  if (commentsQuery.isLoading) return <p className="text-slate-600">Loading comments…</p>;
+  if (commentsQuery.isLoading) return <p className="text-df-dim">Loading comments…</p>;
   if (commentsQuery.isError) return <ErrorMessage error={commentsQuery.error} />;
   const comments = commentsQuery.data ?? [];
 
@@ -186,7 +186,7 @@ function CommentModerationCard({ eventId }: { eventId: string }) {
                 key: "body",
                 header: "Comment",
                 render: (row) => (
-                  <span className="line-clamp-2 max-w-xs text-slate-700">{row.body}</span>
+                  <span className="line-clamp-2 max-w-xs text-df-text">{row.body}</span>
                 ),
               },
               { key: "at", header: "Posted", render: (row) => formatDateTime(row.createdAt) },
@@ -198,7 +198,7 @@ function CommentModerationCard({ eventId }: { eventId: string }) {
                     <div>
                       <Badge tone="red">hidden</Badge>
                       {row.hiddenReason ? (
-                        <span className="ml-1 text-xs text-slate-500">{row.hiddenReason}</span>
+                        <span className="ml-1 text-xs text-df-dim">{row.hiddenReason}</span>
                       ) : null}
                     </div>
                   ) : (

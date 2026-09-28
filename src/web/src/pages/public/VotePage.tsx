@@ -68,8 +68,8 @@ function TrackBallot({
             key={project.id}
             className={`flex cursor-pointer items-start gap-3 rounded border p-3 text-sm transition-colors ${
               selected === project.id
-                ? "border-indigo-600 bg-indigo-50"
-                : "border-slate-200 hover:bg-slate-50"
+                ? "border-df-cyan bg-df-cyan/10"
+                : "border-df-border hover:bg-df-panel"
             }`}
           >
             <input
@@ -78,12 +78,12 @@ function TrackBallot({
               value={project.id}
               checked={selected === project.id}
               onChange={() => setSelected(project.id)}
-              className="mt-0.5 accent-indigo-600"
+              className="mt-0.5 accent-df-cyan"
             />
             <div>
-              <span className="font-medium text-slate-900">{project.title}</span>
-              <span className="ml-2 text-slate-500">by {project.teamName}</span>
-              <p className="mt-1 text-slate-600">{project.summary}</p>
+              <span className="font-medium text-df-text">{project.title}</span>
+              <span className="ml-2 text-df-dim">by {project.teamName}</span>
+              <p className="mt-1 text-df-dim">{project.summary}</p>
             </div>
           </label>
         ))}
@@ -91,8 +91,8 @@ function TrackBallot({
           <label
             className={`flex cursor-pointer items-start gap-3 rounded border p-3 text-sm transition-colors ${
               selected === undefined
-                ? "border-indigo-600 bg-indigo-50"
-                : "border-slate-200 hover:bg-slate-50"
+                ? "border-df-cyan bg-df-cyan/10"
+                : "border-df-border hover:bg-df-panel"
             }`}
           >
             <input
@@ -101,14 +101,14 @@ function TrackBallot({
               value=""
               checked={selected === undefined}
               onChange={() => setSelected(undefined)}
-              className="mt-0.5 accent-indigo-600"
+              className="mt-0.5 accent-df-cyan"
             />
-            <span className="text-slate-600">Retract my vote</span>
+            <span className="text-df-dim">Retract my vote</span>
           </label>
         ) : null}
       </fieldset>
       {error ? (
-        <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 rounded border border-red-200 bg-df-panel px-3 py-2 text-sm text-red-700">
           {error}
         </p>
       ) : null}
@@ -132,10 +132,10 @@ export function VotePage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const ballotQuery = useBallot(eventId);
 
-  if (authLoading) return <p className="text-slate-600">Loading…</p>;
+  if (authLoading) return <p className="text-df-dim">Loading…</p>;
   if (!isAuthenticated) return <Navigate to={`/login?next=${encodeURIComponent(`/events/${eventId}/vote`)}`} replace />;
 
-  if (ballotQuery.isLoading) return <p className="text-slate-600">Loading ballot…</p>;
+  if (ballotQuery.isLoading) return <p className="text-df-dim">Loading ballot…</p>;
   if (ballotQuery.isError) {
     const err = ballotQuery.error;
     if (err instanceof ApiError) {
@@ -153,16 +153,16 @@ export function VotePage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to={`/events/${eventId}`} className="text-sm text-indigo-600 hover:underline">
-          Back to event
+        <Link to={`/events/${eventId}`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to event
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Community Vote</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">Community Vote</h1>
         {ballot.isOpen ? (
           <Countdown to={ballot.votingClose} label="Voting closes in" />
         ) : (
-          <p className="mt-1 text-sm text-slate-600">Voting is closed.</p>
+          <p className="mt-1 text-sm text-df-dim">Voting is closed.</p>
         )}
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-df-dim">
           Order is randomised for each voter.
         </p>
       </div>

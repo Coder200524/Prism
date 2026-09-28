@@ -9,7 +9,7 @@ import { ErrorMessage } from "../../components/ErrorMessage";
 function JudgeHomeContent() {
   const assignmentsQuery = useMyJudgeAssignments();
 
-  if (assignmentsQuery.isLoading) return <p className="text-slate-600">Loading assignments…</p>;
+  if (assignmentsQuery.isLoading) return <p className="text-df-dim">Loading assignments…</p>;
   if (assignmentsQuery.isError) return <ErrorMessage error={assignmentsQuery.error} />;
 
   const assignments = assignmentsQuery.data?.assignments ?? [];
@@ -23,8 +23,8 @@ function JudgeHomeContent() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900">Judging</h1>
-        <Link to="/judge/scores" className="text-sm text-indigo-600 hover:underline">
+        <h1 className="text-2xl font-semibold text-df-text">Judging</h1>
+        <Link to="/judge/scores" className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
           My scores
         </Link>
       </div>
@@ -39,7 +39,7 @@ function JudgeHomeContent() {
               key={eventId}
               title={eventAssignments[0]?.eventName ?? eventId}
               actions={
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-df-dim">
                   {submitted} / {eventAssignments.length} submitted
                 </span>
               }
@@ -53,11 +53,11 @@ function JudgeHomeContent() {
                     <div>
                       <Link
                         to={`/judge/assignments/${assignment.id}`}
-                        className="font-medium text-indigo-600 hover:underline"
+                        className="font-medium text-df-pink hover:text-df-cyan transition-colors font-mono"
                       >
                         {assignment.project.title}
                       </Link>
-                      <p className="text-sm text-slate-600">{assignment.project.summary}</p>
+                      <p className="text-sm text-df-dim">{assignment.project.summary}</p>
                     </div>
                     <Badge tone={assignment.status === "SUBMITTED" ? "green" : "amber"}>
                       {assignment.status}

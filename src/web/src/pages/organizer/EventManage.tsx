@@ -41,7 +41,7 @@ function EventManageContent() {
   const tabParam = params.get("tab");
   const activeTab: TabId = isTabId(tabParam) ? tabParam : "settings";
 
-  if (eventQuery.isLoading) return <p className="text-slate-600">Loading…</p>;
+  if (eventQuery.isLoading) return <p className="text-df-dim">Loading…</p>;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
   const event = eventQuery.data?.event;
   if (!event) return null;
@@ -49,22 +49,22 @@ function EventManageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/organize" className="text-sm text-indigo-600 hover:underline">
-          Back to organize
+        <Link to="/organize" className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to organize
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">{event.name}</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">{event.name}</h1>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2 text-sm">
+      <div className="flex flex-wrap gap-3 mb-8">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={
+            className={`relative flex flex-col justify-center min-w-[140px] px-4 py-3 rounded-2xl border text-left transition-all backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.1)] ${
               activeTab === tab.id
-                ? "font-medium text-indigo-600"
-                : "text-slate-500 hover:text-slate-800"
-            }
+                ? "border-df-cyan bg-white/20 shadow-[0_4px_30px_rgba(0,229,208,0.2)]"
+                : "border-white/20 bg-white/10 hover:bg-white/20 hover:border-white/30"
+            }`}
             onClick={() => {
               const next = new URLSearchParams(params);
               if (tab.id === "settings") next.delete("tab");
@@ -72,7 +72,13 @@ function EventManageContent() {
               setParams(next);
             }}
           >
-            {tab.label}
+            <span className={`absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full ${activeTab === tab.id ? 'bg-df-cyan shadow-[0_0_5px_#00E5D0]' : 'bg-white/20'}`}></span>
+            <span className={`font-mono text-[11px] uppercase tracking-widest ${activeTab === tab.id ? 'text-df-text font-bold' : 'text-df-dim font-medium'}`}>
+              {tab.label}
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-widest text-df-dim/50 mt-1.5">
+              PANEL
+            </span>
           </button>
         ))}
       </div>

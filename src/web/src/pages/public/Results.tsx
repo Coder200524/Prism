@@ -12,7 +12,7 @@ export function ResultsPage() {
   const resultsQuery = useEventResults(eventId);
 
   if (eventQuery.isLoading || resultsQuery.isLoading) {
-    return <p className="text-slate-600">Loading results…</p>;
+    return <p className="text-df-dim">Loading results…</p>;
   }
   if (resultsQuery.isError) return <ErrorMessage error={resultsQuery.error} />;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
@@ -23,10 +23,10 @@ export function ResultsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to={`/events/${eventId}`} className="text-sm text-indigo-600 hover:underline">
-          Back to event
+        <Link to={`/events/${eventId}`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to event
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">
           {event?.name ?? "Event"} — Results
         </h1>
       </div>
@@ -50,7 +50,7 @@ export function ResultsPage() {
                     render: (row) => (
                       <Link
                         to={`/projects/${row.id}`}
-                        className="text-indigo-600 hover:underline"
+                        className="text-df-pink hover:text-df-cyan transition-colors font-mono"
                       >
                         {row.title}
                       </Link>

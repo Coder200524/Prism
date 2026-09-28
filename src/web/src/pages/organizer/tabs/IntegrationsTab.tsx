@@ -98,7 +98,7 @@ export function IntegrationsTab({ eventId }: Props) {
   return (
     <div className="space-y-8">
       {/* OpenAPI Specs section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">Developer & API Specs</h2>
         <p className="mt-1 text-sm text-stone-600">
           Access full OpenAPI 3.1 documentation and machine-readable specifications.
@@ -108,7 +108,7 @@ export function IntegrationsTab({ eventId }: Props) {
             href="/api/docs"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+            className="inline-flex items-center rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-df-text hover:bg-stone-800"
           >
             Swagger Interactive UI &rarr;
           </a>
@@ -116,7 +116,7 @@ export function IntegrationsTab({ eventId }: Props) {
             href="/api/docs/openapi.json"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="inline-flex items-center rounded-md border border-stone-300 bg-df-bg px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
           >
             OpenAPI Spec (JSON)
           </a>
@@ -124,22 +124,22 @@ export function IntegrationsTab({ eventId }: Props) {
       </div>
 
       {/* API Keys section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">API Keys</h2>
         <p className="mt-1 text-sm text-stone-600">
           Manage bearer tokens for programmatic backend integrations.
         </p>
 
         {createdSecret && (
-          <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-4">
+          <div className="mt-4 rounded-md border border-green-200 bg-df-panel p-4">
             <h4 className="text-sm font-semibold text-green-800">
               API Key Created Successfully!
             </h4>
-            <p className="mt-1 text-xs text-green-700">
+            <p className="mt-1 text-xs text-df-cyan">
               Please copy this key now. It will not be shown again:
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <code className="rounded bg-white px-3 py-1 font-mono text-sm text-stone-900 border border-green-300 select-all">
+              <code className="rounded bg-df-bg px-3 py-1 font-mono text-sm text-stone-900 border border-green-300 select-all">
                 {createdSecret}
               </code>
               <button
@@ -154,7 +154,7 @@ export function IntegrationsTab({ eventId }: Props) {
             </div>
             <button
               type="button"
-              className="mt-3 text-xs text-stone-500 hover:underline"
+              className="mt-3 text-xs text-stone-500 hover:text-df-cyan transition-colors font-mono"
               onClick={() => setCreatedSecret(null)}
             >
               Dismiss
@@ -166,14 +166,14 @@ export function IntegrationsTab({ eventId }: Props) {
           <input
             type="text"
             placeholder="Key name (e.g., CI Runner, Automation Script)"
-            className="flex-1 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="flex-1 rounded-md border border-white/20 bg-white/5 backdrop-blur-md text-df-text placeholder-white/50 px-3 py-2 text-sm shadow-[0_4px_30px_rgba(0,0,0,0.1)] focus:bg-white/10 focus:border-df-cyan focus:outline-none focus:ring-1 focus:ring-df-cyan"
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
           <button
             type="submit"
             disabled={createApiKeyMutation.isPending}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink disabled:opacity-50"
           >
             {createApiKeyMutation.isPending ? "Creating..." : "Create Key"}
           </button>
@@ -209,7 +209,7 @@ export function IntegrationsTab({ eventId }: Props) {
                 {!key.revokedAt && (
                   <button
                     type="button"
-                    className="text-xs font-medium text-red-600 hover:underline"
+                    className="text-xs font-medium text-df-pink hover:text-df-cyan transition-colors font-mono"
                     onClick={() => revokeApiKeyMutation.mutate(key.id)}
                   >
                     Revoke
@@ -222,19 +222,19 @@ export function IntegrationsTab({ eventId }: Props) {
       </div>
 
       {/* Webhooks section */}
-      <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-stone-200 bg-df-bg p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-stone-900">Webhooks</h2>
         <p className="mt-1 text-sm text-stone-600">
           Subscribe external endpoints to real-time event notifications with HMAC signatures.
         </p>
 
         {createdWebhookSecret && (
-          <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-4">
+          <div className="mt-4 rounded-md border border-green-200 bg-df-panel p-4">
             <h4 className="text-sm font-semibold text-green-800">
               Webhook Secret Generated
             </h4>
             <div className="mt-2 flex items-center gap-2">
-              <code className="rounded bg-white px-3 py-1 font-mono text-sm text-stone-900 border border-green-300 select-all">
+              <code className="rounded bg-df-bg px-3 py-1 font-mono text-sm text-stone-900 border border-green-300 select-all">
                 {createdWebhookSecret}
               </code>
               <button
@@ -249,7 +249,7 @@ export function IntegrationsTab({ eventId }: Props) {
             </div>
             <button
               type="button"
-              className="mt-3 text-xs text-stone-500 hover:underline"
+              className="mt-3 text-xs text-stone-500 hover:text-df-cyan transition-colors font-mono"
               onClick={() => setCreatedWebhookSecret(null)}
             >
               Dismiss
@@ -264,7 +264,7 @@ export function IntegrationsTab({ eventId }: Props) {
               type="url"
               required
               placeholder="https://example.com/webhooks/dogfood"
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-white/20 bg-white/5 backdrop-blur-md text-df-text placeholder-white/50 px-3 py-2 text-sm shadow-[0_4px_30px_rgba(0,0,0,0.1)] focus:bg-white/10 focus:border-df-cyan focus:outline-none focus:ring-1 focus:ring-df-cyan"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
             />
@@ -275,7 +275,7 @@ export function IntegrationsTab({ eventId }: Props) {
             <input
               type="text"
               placeholder="whsec_..."
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none font-mono"
+              className="mt-1 w-full rounded-md border border-white/20 bg-white/5 backdrop-blur-md text-df-text placeholder-white/50 px-3 py-2 text-sm shadow-[0_4px_30px_rgba(0,0,0,0.1)] focus:bg-white/10 focus:border-df-cyan focus:outline-none focus:ring-1 focus:ring-df-cyan font-mono"
               value={webhookSecret}
               onChange={(e) => setWebhookSecret(e.target.value)}
             />
@@ -290,7 +290,7 @@ export function IntegrationsTab({ eventId }: Props) {
                     type="checkbox"
                     checked={selectedEvents.includes(evt.id)}
                     onChange={() => handleToggleEvent(evt.id)}
-                    className="mr-2 rounded border-stone-300 text-indigo-600 focus:ring-indigo-500"
+                    className="mr-2 rounded border-stone-300 text-df-pink focus:ring-df-pink"
                   />
                   {evt.label}
                 </label>
@@ -301,7 +301,7 @@ export function IntegrationsTab({ eventId }: Props) {
           <button
             type="submit"
             disabled={createWebhookMutation.isPending}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-md bg-df-pink px-4 py-2 text-sm font-medium text-df-text hover:bg-df-pink disabled:opacity-50"
           >
             {createWebhookMutation.isPending ? "Registering..." : "Register Webhook"}
           </button>
@@ -319,7 +319,7 @@ export function IntegrationsTab({ eventId }: Props) {
                 <div
                   key={wh.id}
                   className={`rounded-md border p-4 ${
-                    activeWebhookId === wh.id ? "border-indigo-500 bg-indigo-50/20" : "border-stone-200 bg-white"
+                    activeWebhookId === wh.id ? "border-df-pink bg-indigo-50/20" : "border-stone-200 bg-df-bg"
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -336,7 +336,7 @@ export function IntegrationsTab({ eventId }: Props) {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                        className="rounded border border-stone-300 bg-df-bg px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
                         onClick={() => testWebhookMutation.mutate(wh.id)}
                         disabled={testWebhookMutation.isPending}
                       >
@@ -344,14 +344,14 @@ export function IntegrationsTab({ eventId }: Props) {
                       </button>
                       <button
                         type="button"
-                        className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                        className="rounded border border-stone-300 bg-df-bg px-2.5 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
                         onClick={() => setActiveWebhookId(activeWebhookId === wh.id ? null : wh.id)}
                       >
                         {activeWebhookId === wh.id ? "Hide Logs" : "View Logs"}
                       </button>
                       <button
                         type="button"
-                        className="text-xs text-red-600 hover:underline"
+                        className="text-xs text-df-pink hover:text-df-cyan transition-colors font-mono"
                         onClick={() => deleteWebhookMutation.mutate(wh.id)}
                       >
                         Delete
@@ -399,7 +399,7 @@ export function IntegrationsTab({ eventId }: Props) {
                               </div>
                               <button
                                 type="button"
-                                className="rounded bg-white px-2 py-1 text-xs font-medium text-stone-700 border border-stone-300 hover:bg-stone-50"
+                                className="rounded bg-df-bg px-2 py-1 text-xs font-medium text-stone-700 border border-stone-300 hover:bg-stone-50"
                                 onClick={() =>
                                   redeliverMutation.mutate({ webhookId: wh.id, deliveryId: del.id })
                                 }

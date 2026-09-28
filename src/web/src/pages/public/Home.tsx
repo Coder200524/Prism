@@ -1,47 +1,37 @@
 import { Link } from "react-router-dom";
-import { Card } from "../../components/Card";
 
 export function HomePage() {
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
-        <h1 className="text-3xl font-semibold text-slate-900">DOGFOOD Portal</h1>
-        <p className="max-w-2xl text-base text-slate-600">
-          A self-hosted hackathon submission and judging portal. Browse open events, explore
-          submitted projects, and manage teams, scoring, and results when you have access.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to="/events"
-            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-          >
-            Browse events
-          </Link>
-          <Link
-            to="/gallery"
-            className="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
-          >
-            Browse gallery
-          </Link>
-        </div>
-      </section>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-250px)] text-center px-4 relative">
+      <div 
+        className="absolute inset-0 z-[-1] opacity-20 pointer-events-none"
+        style={{ 
+          backgroundImage: 'radial-gradient(circle at center, rgba(0, 229, 208, 0.15) 0%, transparent 50%)'
+        }}
+      ></div>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <h2 className="text-lg font-semibold text-slate-900">Events & submissions</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Find published hackathons, form a team, and submit your project while submissions are
-            open.
-          </p>
-        </Card>
-        <Card>
-          <h2 className="text-lg font-semibold text-slate-900">Judging & results</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Organizers invite judges, assign projects, and publish ranked results when judging is
-            complete.
-          </p>
-        </Card>
-      </section>
+      <h1 className="text-5xl sm:text-6xl md:text-[6.5rem] font-bold text-white leading-[1.05] tracking-tight max-w-5xl font-sans uppercase">
+        CodeClash
+      </h1>
+      
+      <p className="mt-6 text-xl md:text-2xl text-df-cyan max-w-3xl font-bold leading-relaxed tracking-widest uppercase">
+        Build. Compete. Conquer.
+      </p>
+
+      <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+        <Link 
+          to="/events" 
+          className="bg-white text-black font-semibold text-sm px-7 py-3.5 rounded-md hover:bg-gray-200 transition-colors uppercase tracking-wide shadow-lg"
+        >
+          START BUILDING
+        </Link>
+        <a 
+          href="mailto:hello@codecolosseum.com"
+          className="bg-transparent text-white/90 border border-white/30 font-semibold text-sm px-7 py-3.5 rounded-md hover:bg-white/10 transition-colors uppercase tracking-wide backdrop-blur-sm"
+        >
+          TALK TO US
+        </a>
+      </div>
     </div>
   );
 }

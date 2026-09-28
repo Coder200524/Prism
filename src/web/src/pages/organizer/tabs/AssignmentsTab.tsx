@@ -26,7 +26,7 @@ export function AssignmentsTab({ eventId }: { eventId: string }) {
     setUnassignable(result.unassignable);
   }
 
-  if (assignmentsQuery.isLoading) return <p className="text-slate-600">Loading assignments…</p>;
+  if (assignmentsQuery.isLoading) return <p className="text-df-dim">Loading assignments…</p>;
   if (assignmentsQuery.isError) return <ErrorMessage error={assignmentsQuery.error} />;
 
   const assignments = assignmentsQuery.data?.assignments ?? [];
@@ -45,18 +45,18 @@ export function AssignmentsTab({ eventId }: { eventId: string }) {
           </Button>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-df-dim">
           Assigns judges to submitted projects using track preferences and load balancing.
         </p>
         {autoAssign.isError ? <ErrorMessage error={autoAssign.error} /> : null}
         {created !== null ? (
-          <p className="mt-2 text-sm text-green-700">Created {created} new assignment(s).</p>
+          <p className="mt-2 text-sm text-df-cyan">Created {created} new assignment(s).</p>
         ) : null}
       </Card>
 
       {unassignable.length > 0 ? (
         <Card title="Unassignable projects">
-          <ul className="space-y-2 text-sm text-slate-700">
+          <ul className="space-y-2 text-sm text-df-text">
             {unassignable.map((item) => (
               <li key={item.projectId}>
                 <span className="font-medium">{item.projectId}</span>: {item.reason}

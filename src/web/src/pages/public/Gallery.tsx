@@ -37,7 +37,7 @@ export function GalleryPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Gallery</h1>
+      <h1 className="text-2xl font-semibold text-df-text">Gallery</h1>
       <div className="grid gap-3 md:grid-cols-3">
         <Input
           label="Search"
@@ -66,7 +66,7 @@ export function GalleryPage() {
         />
       </div>
 
-      {galleryQuery.isLoading ? <p className="text-slate-600">Loading projects…</p> : null}
+      {galleryQuery.isLoading ? <p className="text-df-dim">Loading projects…</p> : null}
       {galleryQuery.isError ? <ErrorMessage error={galleryQuery.error} /> : null}
 
       {galleryQuery.data && galleryQuery.data.items.length === 0 ? (
@@ -78,12 +78,12 @@ export function GalleryPage() {
           <Card key={project.id}>
             <Link
               to={`/projects/${project.id}`}
-              className="text-lg font-semibold text-indigo-600 hover:underline"
+              className="text-lg font-semibold text-df-pink hover:text-df-cyan transition-colors font-mono"
             >
               {project.title}
             </Link>
-            <p className="mt-1 text-sm text-slate-600">{project.summary}</p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-1 text-sm text-df-dim">{project.summary}</p>
+            <p className="mt-2 text-xs text-df-dim">
               {project.teamName ?? "Team"} · {project.trackName ?? "No track"}
             </p>
           </Card>
