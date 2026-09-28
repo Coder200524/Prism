@@ -823,6 +823,34 @@ describe("api/permission-matrix", () => {
         admin: 200,
       },
     },
+    {
+      name: "POST /api/import",
+      method: "post",
+      path: () => `/api/import?dryRun=true`,
+      body: (s) => ({ event: { id: "evt_new", name: "New Event" } }),
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
+    {
+      name: "POST /api/events/:eventId/import.json",
+      method: "post",
+      path: (s) => `/api/events/${s.eventId}/import.json?dryRun=true`,
+      body: (s) => ({ event: { id: s.eventId, name: "Existing Event" } }),
+      expected: {
+        anonymous: 401,
+        participant: 403,
+        judgeA: 403,
+        judgeB: 403,
+        organizer: 200,
+        admin: 200,
+      },
+    },
   ];
 
   for (const matrixCase of cases) {

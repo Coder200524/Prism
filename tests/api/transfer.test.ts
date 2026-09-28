@@ -442,4 +442,87 @@ bob@test.local,Bob Judge,
       })),
     ).toEqual(snapshot);
   });
+
+  it("rejects import to existing event by non-organizer and rejects API keys", async () => {
+    const admin = await createUser({ email: "imp_admin2@test.local", name: "Admin", platformRole: PlatformRole.ADMIN });
+    const evt = await createEvent({ id: "evt_secure", name: "Secure Event" });
+    const otherOrg = await createUser({ email: "other_org@test.local", name: "Other Org", platformRole: PlatformRole.ORGANIZER });
+    await createEvent({ id: "evt_other" });
+
+    // API key creation
+    const keyResRaw = await request(app)
+      .post("/api/api-keys")
+      .set(authHeader(admin.token))
+      .send({ name: "Global Key", scopes: ["read", "write"] });
+    const apiKeyStr = keyResRaw.body.key;
+
+    const payload = {
+      event: { id: "evt_secure", name: "Secure Event" },
+      tracks: [], prizes: [], criteria: [], judges: [], teams: [], projects: [], scores: []
+    };
+
+    // 1. Other organizer 403
+    const badOrgRes = await request(app).post("/api/import?dryRun=false").set(authHeader(otherOrg.token)).send(payload);
+    expect(badOrgRes.status).toBe(403);
+
+    const badOrgDryRes = await request(app).post("/api/import?dryRun=true").set(authHeader(otherOrg.token)).send(payload);
+    expect(badOrgDryRes.status).toBe(403);
+
+    // 2. API key 403
+    const keyRes = await request(app).post("/api/import?dryRun=false").set("Authorization", `Bearer ${apiKeyStr}`).send(payload);
+    expect(keyRes.status).toBe(403);
+  });
+
+  it("validates scores ranges, criteria, and project submittedAt", async () => {
+    const admin = await createUser({ email: "imp_admin3@test.local", name: "Admin", platformRole: PlatformRole.ADMIN });
+    const payload = {
+      event: { id: "evt_val", name: "Val Event", submissionsClose: "2026-09-28T18:00:00Z" },
+      tracks: [], prizes: [], 
+      criteria: [
+        { key: "crit1", name: "Crit 1", weight: 100, minScore: 1, maxScore: 5 }
+      ], 
+      judges: [{ email: "j1@test.local", name: "J1" }], 
+      teams: [
+        { name: "Team 1", members: ["j1@test.local"] }
+      ], 
+      projects: [
+        { title: "Proj 1", team: "Team 1", submittedAt: "2026-09-29T18:00:00Z" },
+        { title: "Proj 2", team: "Team 1", submittedAt: "2026-09-27T18:00:00Z" }
+      ], 
+      scores: [
+        { project: "Proj 2", judge: "j1@test.local", criteria: { "crit1": 10 } },
+        { project: "Proj 2", judge: "j1@test.local", criteria: { "crit_missing": 3 } },
+        { project: "Proj 2", judge: "j1@test.local", criteria: { "crit1": 3 } }
+      ]
+    };
+
+    // 1. Late submittedAt
+    const p1 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p1.status).toBe(400);
+    expect(p1.body.error.details[0].message).toMatch(/after event submissionsClose/);
+
+    // fix submittedAt
+    payload.projects[0].submittedAt = "2026-09-27T18:00:00Z";
+
+    // 2. Out of range score
+    const p2 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p2.status).toBe(400);
+    expect(p2.body.error.details[0].message).toMatch(/Score must be an integer between 1 and 5/);
+
+    // fix out of range score
+    payload.scores[0].criteria["crit1"] = 3;
+
+    // 3. Unknown criterion
+    const p3 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p3.status).toBe(400);
+    expect(p3.body.error.details[0].message).toMatch(/Unknown criterion/);
+
+    // fix unknown criterion
+    payload.scores[1].criteria = { "crit1": 3 };
+
+    // 4. Judge conflict of interest
+    const p4 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p4.status).toBe(400);
+    expect(p4.body.error.details[0].message).toMatch(/Judge cannot score their own team/);
+  });
 });
