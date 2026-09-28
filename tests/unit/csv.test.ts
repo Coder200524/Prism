@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeCsvCell, toCsv } from "../../src/server/src/lib/csv";
+import { escapeCsvCell, parseCsv, parseCsvLine, toCsv } from "../../src/server/src/lib/csv";
 
 describe("csv", () => {
   it("escapes commas quotes and newlines", () => {
@@ -16,5 +16,19 @@ describe("csv", () => {
 
   it("joins rows with commas and trailing newline", () => {
     expect(toCsv([["a", "b"], ["c", "d"]])).toBe("a,b\nc,d\n");
+  });
+
+  it("parseCsvLine handles quoted commas and escaped quotes", () => {
+    expect(parseCsvLine('a,"b,c","d""e"')).toEqual(["a", "b,c", 'd"e']);
+    expect(parseCsvLine('"hello, ""world"""')).toEqual(['hello, "world"']);
+  });
+
+  it("parseCsv handles newlines inside quoted fields", () => {
+    const text = 'name,notes\nAlice,"line1\nline2"\nBob,ok\n';
+    expect(parseCsv(text)).toEqual([
+      ["name", "notes"],
+      ["Alice", "line1\nline2"],
+      ["Bob", "ok"],
+    ]);
   });
 });

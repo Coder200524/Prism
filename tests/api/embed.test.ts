@@ -142,4 +142,30 @@ describe("Embed Gallery Widget API & Security Headers", () => {
       ),
     ).toBe(false);
   });
+
+  it("keeps /embed/gallery as SPA HTML and /api/embed/gallery as JSON", async () => {
+    await resetDatabase();
+    const event = await createEvent({ name: "Embed Route Split" });
+    await prisma.event.update({
+      where: { id: event.id },
+      data: { resultsPublishedAt: new Date("2026-09-27T12:00:00Z") },
+    });
+
+    const pageRes = await request(app).get(`/embed/gallery?eventId=${event.id}`);
+    expect(pageRes.status).toBe(200);
+    // SPA fallback serves index.html, never a JSON gallery payload.
+    expect(pageRes.headers["content-type"]).toMatch(/text\/html/);
+    expect(pageRes.text).not.toMatch(/"projects"\s*:/);
+
+    const apiRes = await request(app).get(`/api/embed/gallery?eventId=${event.id}`);
+    expect(apiRes.status).toBe(200);
+    expect(apiRes.headers["content-type"]).toMatch(/json/);
+    expect(apiRes.body).toHaveProperty("projects");
+    expect(Array.isArray(apiRes.body.projects)).toBe(true);
+
+    const scriptRes = await request(app).get("/embed.js");
+    expect(scriptRes.status).toBe(200);
+    expect(scriptRes.text).toContain("/embed/gallery?");
+    expect(scriptRes.text).not.toContain("/api/embed/gallery?");
+  });
 });

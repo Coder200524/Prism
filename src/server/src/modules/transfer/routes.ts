@@ -93,3 +93,34 @@ eventTransferRouter.post(
     res.status(200).json(result);
   },
 );
+
+// Event-scoped JSON import (upsert into this event when payload omits/mismatches id)
+eventTransferRouter.post(
+  "/import.json",
+  requireAuth,
+  requireEventRole("ORGANIZER", (req) => req.params.eventId as string),
+  (req, res, next) => {
+    json10mb(req, res, (err) => {
+      if (err) {
+        next(payloadTooLarge("Payload exceeds 10 MB limit"));
+        return;
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    const dryRun = req.query.dryRun === "true";
+    const body =
+      req.body && typeof req.body === "object"
+        ? {
+            ...req.body,
+            event: {
+              ...(req.body as { event?: Record<string, unknown> }).event,
+              id: req.params.eventId,
+            },
+          }
+        : req.body;
+    const result = await importService.importData(req, body, dryRun);
+    res.status(200).json(result);
+  },
+);

@@ -37,19 +37,13 @@ async function upsertUser(input: {
   passwordHash: string;
   platformRole?: PlatformRole;
 }): Promise<{ id: string; email: string; name: string }> {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  // Create-only: never overwrite name, password, or platformRole on re-seed.
+  const existing = await prisma.user.findUnique({
+    where: { email: input.email },
+    select: { id: true, email: true, name: true },
+  });
   if (existing) {
-    return prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        name: input.name,
-        passwordHash: input.passwordHash,
-        ...(input.platformRole !== undefined
-          ? { platformRole: input.platformRole }
-          : {}),
-      },
-      select: { id: true, email: true, name: true },
-    });
+    return existing;
   }
   return prisma.user.create({
     data: {
@@ -325,13 +319,25 @@ async function seedFixtureEvent(
 
   const projectsForDup = await prisma.project.findMany({
     where: { eventId: fixtures.event.id },
-    select: { id: true, title: true, repoUrl: true, submittedAt: true },
+    select: {
+      id: true,
+      title: true,
+      repoUrl: true,
+      submittedAt: true,
+      duplicateOfId: true,
+      duplicateCleared: true,
+    },
   });
   const duplicateMap = findDuplicates(projectsForDup);
   for (const project of projectsForDup) {
+    // Never overwrite an organizer clear, and never rewrite an already-set link.
+    if (project.duplicateCleared) continue;
+    if (project.duplicateOfId !== null) continue;
+    const detected = duplicateMap.get(project.id) ?? null;
+    if (detected === null) continue;
     await prisma.project.update({
       where: { id: project.id },
-      data: { duplicateOfId: duplicateMap.get(project.id) ?? null },
+      data: { duplicateOfId: detected },
     });
   }
 

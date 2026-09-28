@@ -1,4 +1,9 @@
-# Tier 4 build: Antigravity prompts, one phase at a time
+# Tier 4 build: Antigravity prompts, one phase at a time (HISTORICAL)
+
+> **Historical T4 build playbook.** T4 features are implemented in the current codebase
+> (API keys, OpenAPI, import/export, records/certificates, embed gallery, webhooks).
+> This file is retained as a construction log, not as current status.
+> `run.py` does **not** verify T4.
 
 **Branch:** `tier-4`, created from `main` **after `tier-3` is merged** (the tier ladder only counts T4
 if T3 is complete).

@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { PlatformRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { prisma } from "../../src/server/src/lib/prisma.js";
 import { runSeed } from "../../src/server/src/seed/index.js";
 import { clearFixedClock, resetDatabase, setFixedClock } from "../helpers/index.js";
@@ -82,5 +84,76 @@ describe("api/seed", () => {
       },
     });
     expect(updatedScore.value).toBe(999);
+  }, 120000);
+
+  it("preserves organizer duplicate decisions across re-seed", async () => {
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const project = await prisma.project.findFirstOrThrow({
+      where: { eventId: "evt_01", duplicateOfId: { not: null } },
+    });
+
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { duplicateOfId: null, duplicateCleared: true },
+    });
+
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const after = await prisma.project.findUniqueOrThrow({ where: { id: project.id } });
+    expect(after.duplicateCleared).toBe(true);
+    expect(after.duplicateOfId).toBeNull();
+  }, 120000);
+
+  it("preserves project title edits across re-seed", async () => {
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const project = await prisma.project.findFirstOrThrow({ where: { eventId: "evt_01" } });
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { title: "Organizer Edited Title", summary: "Edited summary" },
+    });
+
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const after = await prisma.project.findUniqueOrThrow({ where: { id: project.id } });
+    expect(after.title).toBe("Organizer Edited Title");
+    expect(after.summary).toBe("Edited summary");
+  }, 120000);
+
+  it("preserves user name, password, and platformRole across re-seed", async () => {
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const organizer = await prisma.user.findUniqueOrThrow({
+      where: { email: "organizer@dogfood.local" },
+    });
+    const customHash = await bcrypt.hash("custom-organizer-password", 4);
+    await prisma.user.update({
+      where: { id: organizer.id },
+      data: {
+        name: "Renamed Organizer",
+        passwordHash: customHash,
+        platformRole: PlatformRole.USER,
+      },
+    });
+
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+
+    const after = await prisma.user.findUniqueOrThrow({
+      where: { email: "organizer@dogfood.local" },
+    });
+    expect(after.name).toBe("Renamed Organizer");
+    expect(after.passwordHash).toBe(customHash);
+    expect(after.platformRole).toBe(PlatformRole.USER);
+
+    // Missing bootstrap users are still created.
+    await prisma.eventRole.deleteMany({ where: { user: { email: "voter5@dogfood.local" } } });
+    await prisma.user.delete({ where: { email: "voter5@dogfood.local" } });
+    await runSeed({ seedDemo: true, publicUrl: "http://localhost:8080" });
+    const recreated = await prisma.user.findUnique({
+      where: { email: "voter5@dogfood.local" },
+    });
+    expect(recreated).not.toBeNull();
+    expect(recreated!.name.length).toBeGreaterThan(0);
   }, 120000);
 });

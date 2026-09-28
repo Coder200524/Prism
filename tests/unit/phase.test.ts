@@ -56,6 +56,30 @@ describe("phase helpers", () => {
     ).toBe(false);
   });
 
+  it("returns closed when judging ended and results are not published", () => {
+    const e = event({ judgingClose: new Date("2026-03-10T00:00:00.000Z") });
+    expect(phase(e, new Date("2026-03-09T23:59:59.999Z"))).toBe("judging");
+    expect(phase(e, new Date("2026-03-10T00:00:00.000Z"))).toBe("closed");
+    expect(phase(e, new Date("2026-04-01T00:00:00.000Z"))).toBe("closed");
+  });
+
+  it("uses exclusive end boundary for submissions window", () => {
+    const e = event();
+    expect(submissionsOpen(e, new Date("2026-02-01T00:00:00.000Z"))).toBe(true);
+    expect(submissionsOpen(e, new Date("2026-03-01T00:00:00.000Z"))).toBe(false);
+    expect(phase(e, new Date("2026-02-28T23:59:59.999Z"))).toBe("submissions");
+    expect(phase(e, new Date("2026-03-01T00:00:00.000Z"))).toBe("judging");
+  });
+
+  it("prefers results phase over closed when results are published", () => {
+    const e = event({
+      judgingClose: new Date("2026-03-10T00:00:00.000Z"),
+      resultsPublishedAt: new Date("2026-03-15T00:00:00.000Z"),
+    });
+    expect(phase(e, new Date("2026-03-20T00:00:00.000Z"))).toBe("results");
+    expect(judgingOpen(e, new Date("2026-03-12T00:00:00.000Z"))).toBe(false);
+  });
+
   it("correctly identifies voting windows", () => {
     const withoutVoting = event();
     expect(votingEnabled(withoutVoting)).toBe(false);

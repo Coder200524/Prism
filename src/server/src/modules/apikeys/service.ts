@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Request } from "express";
 import type { CreateApiKeyBody } from "@dogfood/shared";
 import { audit } from "../../lib/audit.js";
+import { assertApiKeyEventScope } from "../../lib/api-key-scope.js";
 import { clock } from "../../lib/clock.js";
 import { forbidden, notFound, unauthorized } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
@@ -78,6 +79,9 @@ export async function revokeApiKey(req: Request, id: string) {
 
   const key = await prisma.apiKey.findUnique({ where: { id } });
   if (!key) throw notFound("API key not found");
+
+  // Event-scoped callers may only revoke keys for their own event (not global/other).
+  assertApiKeyEventScope(req, key.eventId);
 
   if (req.user.platformRole !== "ADMIN" && key.ownerId !== req.user.id) {
     if (key.eventId) {

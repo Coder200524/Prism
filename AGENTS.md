@@ -28,18 +28,18 @@ Every team builds the same product. We are judged on:
 
 ## 2. Current status
 
-- **Tier 1 (Core): done and verified.** Auth + sessions, 5 roles, events with dates/tracks/prizes,
+- **Tier 1 (Core): done and verified by `run.py`.** Auth + sessions, 5 roles, events with dates/tracks/prizes,
   teams via invite link, draft → submit → edit until deadline, server-enforced deadline, public
   gallery with search and filter.
-- **Tier 2 (Judging): done and verified.** Judge invites + assignment, weighted rubric, judge
+- **Tier 2 (Judging): done and verified by `run.py`.** Judge invites + assignment, weighted rubric, judge
   isolation in the backend, live organizer dashboard, documented cross-judge normalization, CSV export.
-- **Official checker:** `run.py` → 7/7 PASS. **300+ automated tests** passing.
-- **In progress on branches:** `tier-3` (community voting, comments, anti-abuse, THREAT-MODEL.md)
-  and `ui-polish` (visual redesign, styling only).
-- **Tier 4: not planned.** Don't start T4 work unless the human explicitly asks.
-- `.dogfood.toml` claims `["T1", "T2"]`. T3 gets added **only** when every T3 item works and is tested.
-
-The audit history is in `AUDIT-REPORT.md`. The original build spec is `docs/SPEC.md`.
+- **Tier 3 (Community): implemented and covered by project tests.** Community voting, comments, anti-abuse,
+  `THREAT-MODEL.md`. Not exercised by the official checker.
+- **Tier 4 (Integrations): implemented and covered by project tests.** API keys, OpenAPI, import/export,
+  records/certificates, embed gallery, signed webhooks. Not exercised by the official checker.
+- **Official checker:** `run.py` → 7/7 PASS for T1/T2 only (`verified T1 T2`; claimed T3/T4 are noted as
+  unverified). See `acceptance-report.txt`.
+- `.dogfood.toml` claims `["T1", "T2", "T3", "T4"]`. Only change the `claimed` line with human approval.
 
 ---
 

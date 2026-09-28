@@ -21,6 +21,27 @@ describe("api/events", () => {
     clearFixedClock();
   });
 
+  it("rejects malformed submissionsOpen datetime strings", async () => {
+    const organizer = await createUser({
+      email: "bad-date@test.local",
+      name: "Org",
+      platformRole: PlatformRole.ORGANIZER,
+    });
+
+    for (const submissionsOpen of ["1", "soon"]) {
+      const res = await request(app)
+        .post("/api/events")
+        .set(authHeader(organizer.token))
+        .send({
+          name: "Bad Date Event",
+          submissionsOpen,
+          submissionsClose: "2026-06-20T00:00:00.000Z",
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("bad_request");
+    }
+  });
+
   it("rejects event creation with votingClose before votingOpen", async () => {
     const organizer = await createUser({
       email: "org@test.local",

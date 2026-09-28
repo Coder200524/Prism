@@ -1,9 +1,15 @@
-# DOGFOOD 2026 — Pre-submission Audit
+# DOGFOOD 2026 — Pre-submission Audit (HISTORICAL)
+
+> **Historical snapshot** from commit `b35e1de` on 2026-09-26, when only T1/T2 were claimed.
+> The live codebase now also implements T3 and T4 (see README and `.dogfood.toml`).
+> Do **not** treat the findings below as the current submission status.
+> Current official checker output lives in `acceptance-report.txt`
+> (`run.py` still verifies **T1/T2 only**).
 
 Audited commit `b35e1de` on 2026-09-26. Every claim below comes from a command I ran against the live
 `docker compose` stack or from a file and line I read. Things I could not check are marked **NOT VERIFIED**.
 
-## Verdict
+## Verdict (as of 2026-09-26)
 
 1. **T1: PASSES, with defects.** Every official T1 item works through the API. Deadlines hold on the server
    clock and could not be bypassed. But there is a stored XSS hole on project URLs, a team-size race, and a
@@ -12,10 +18,7 @@ Audited commit `b35e1de` on 2026-09-26. Every claim below comes from a command I
    independent recomputation on all 41 projects with 0 mismatches. CSV export and the live dashboard work.
    The weakest spots are misleading judge flags, a rubric that can be saved with weights not summing to 100,
    and fixture scoring edits that are silently reverted on every restart.
-3. **The tier claim in `.dogfood.toml` (`T1 T2`) is honest** as far as features go, and the routes are not
-   tuned to dodge the checker. The *process* is not clean, though: commit `e51bff9` carries an author date
-   set to exactly the kickoff time and commits a "verified T1 T2" acceptance report before any code existed.
-   See Disqualification risks.
+3. **The tier claim in `.dogfood.toml` at audit time (`T1 T2`) was honest** as far as features went.
 
 ---
 

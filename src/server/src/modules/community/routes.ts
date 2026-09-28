@@ -11,8 +11,8 @@ import { voidVoteBodySchema } from "@dogfood/shared";
 export const communityRouter = Router();
 
 const voteRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 30,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 15,
   keyGenerator: (req: Request) => {
     return req.user?.id ?? "unknown";
   },

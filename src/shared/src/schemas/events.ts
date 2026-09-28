@@ -3,7 +3,18 @@ import { z } from "zod";
 const isoDateTime = z
   .string()
   .min(1)
-  .refine((value) => !Number.isNaN(Date.parse(value)), { message: "Invalid datetime" });
+  .refine(
+    (value) => {
+      // Reject bare numbers / short numeric strings that Date.parse accepts
+      // (e.g. "1" → 2001-01-01) and require a real calendar datetime.
+      if (!/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(value)) {
+        return false;
+      }
+      const parsed = Date.parse(value);
+      return !Number.isNaN(parsed);
+    },
+    { message: "Invalid datetime" },
+  );
 
 export const trackInputSchema = z.object({
   name: z.string().trim().min(1).max(120),

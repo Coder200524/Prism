@@ -17,7 +17,7 @@ export function useImportJson(eventId: string) {
   const queryClient = useQueryClient();
   return useMutation<DryRunSummary, Error, { payload: unknown; dryRun: boolean }>({
     mutationFn: ({ payload, dryRun }) =>
-      apiRequest(`/api/events/${eventId}/import/json${dryRun ? "?dryRun=true" : ""}`, {
+      apiRequest(`/api/events/${eventId}/import.json${dryRun ? "?dryRun=true" : ""}`, {
         method: "POST",
         body: payload,
       }),
@@ -33,7 +33,7 @@ export function useImportCsvJudges(eventId: string) {
   const queryClient = useQueryClient();
   return useMutation<DryRunSummary, Error, { csvText: string; dryRun: boolean }>({
     mutationFn: ({ csvText, dryRun }) =>
-      apiRequest(`/api/events/${eventId}/import/csv-judges${dryRun ? "?dryRun=true" : ""}`, {
+      apiRequest(`/api/events/${eventId}/import/judges.csv${dryRun ? "?dryRun=true" : ""}`, {
         method: "POST",
         headers: { "Content-Type": "text/csv" },
         rawBody: csvText,
