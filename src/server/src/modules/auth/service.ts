@@ -15,6 +15,9 @@ import { generateToken, hashToken } from "../../lib/tokens.js";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = 10;
+// Precomputed bcrypt so unknown-email logins still pay the compare cost.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$70mooqkbF7SNNpyksPr6lOszSwgN.OpYE7bwbgnZWfpJgAwE3MdG2";
 
 function toPublicUser(user: {
   id: string;
@@ -74,12 +77,9 @@ export async function login(req: Request, body: LoginBody) {
     where: { email: parsed.email.toLowerCase() },
   });
 
-  if (!user) {
-    throw new HttpError(401, "invalid_credentials", "Invalid email or password");
-  }
-
-  const ok = await bcrypt.compare(parsed.password, user.passwordHash);
-  if (!ok) {
+  const hash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
+  const ok = await bcrypt.compare(parsed.password, hash);
+  if (!user || !ok) {
     throw new HttpError(401, "invalid_credentials", "Invalid email or password");
   }
 

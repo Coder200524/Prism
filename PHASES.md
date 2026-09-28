@@ -1,4 +1,8 @@
-# Cursor build prompts — paste one phase at a time
+# Cursor build prompts — paste one phase at a time (HISTORICAL)
+
+> **Historical build playbook** used during the hackathon. The application is past these phases.
+> Prefer README / ARCHITECTURE / DATA-MODEL / JUDGING / THREAT-MODEL for current behaviour.
+> Official acceptance still verifies **T1/T2 only** via `run.py`.
 
 How to use:
 1. At kickoff, put `docs/SPEC.md`, `.cursor/rules/dogfood.mdc`, `fixtures.json` and `run.py` in the

@@ -1,5 +1,6 @@
 import type { EventRoleType, PlatformRole } from "@prisma/client";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
+import { assertApiKeyEventScope } from "../lib/api-key-scope.js";
 import { forbidden, unauthorized } from "../lib/http-error.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -41,12 +42,20 @@ export function requireAnyEventRole(
       next(unauthorized());
       return;
     }
+
+    const eventId = eventIdFrom(req);
+    try {
+      assertApiKeyEventScope(req, eventId);
+    } catch (err) {
+      next(err);
+      return;
+    }
+
     if (req.user.platformRole === "ADMIN") {
       next();
       return;
     }
 
-    const eventId = eventIdFrom(req);
     const match = await prisma.eventRole.findFirst({
       where: {
         userId: req.user.id,

@@ -11,8 +11,9 @@ As a self-hosted platform running high-stakes hackathons, maintaining the integr
 ## 2. Ballot Stuffing & Scripted Voting
 - **Threat**: Bots hammering the API to submit thousands of votes.
 - **Mitigation**: 
-  - Strict Rate Limiting: 15 votes per hour per track per user (via Express rate limit).
+  - Strict Rate Limiting: 15 voting requests per hour per authenticated user (ballot fetch + cast + retract share the budget).
   - Rate limits are keyed by authenticated user ID where possible, preventing IP rotation from bypassing per-user limits.
+  - `trust proxy` is off unless `TRUST_PROXY=1`, so spoofed `X-Forwarded-For` cannot bypass IP-keyed limits.
 - **Detection**: 429 status codes are returned to the attacker.
 - **Limitation**: Determined attackers distributing requests slowly across pre-registered accounts will bypass rate limits.
 

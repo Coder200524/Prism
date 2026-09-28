@@ -291,7 +291,7 @@ export async function rotateInvite(req: Request, teamId: string) {
     },
   });
 
-  await audit(req, "team.invite.rotate", { type: "team", id: teamId, eventId: team.eventId });
+  await audit(req, "team.invite_rotate", { type: "team", id: teamId, eventId: team.eventId });
   return { team: serializeTeam(team), inviteUrl: inviteUrl(team.inviteCode) };
 }
 

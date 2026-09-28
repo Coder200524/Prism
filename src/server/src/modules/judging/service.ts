@@ -416,14 +416,28 @@ export async function autoAssign(req: Request, eventId: string) {
   });
 
   if (result.created.length > 0) {
-    await prisma.assignment.createMany({
-      data: result.created.map((row) => ({
-        eventId,
-        judgeId: row.judgeId,
-        projectId: row.projectId,
-        status: AssignmentStatus.PENDING,
-      })),
-      skipDuplicates: true,
+    await prisma.$transaction(async (tx) => {
+      const existingNow = await tx.assignment.findMany({
+        where: { eventId },
+        select: { judgeId: true, projectId: true },
+      });
+      const existingKeys = new Set(
+        existingNow.map((row) => `${row.judgeId}:${row.projectId}`),
+      );
+      const toCreate = result.created.filter(
+        (row) => !existingKeys.has(`${row.judgeId}:${row.projectId}`),
+      );
+      if (toCreate.length > 0) {
+        await tx.assignment.createMany({
+          data: toCreate.map((row) => ({
+            eventId,
+            judgeId: row.judgeId,
+            projectId: row.projectId,
+            status: AssignmentStatus.PENDING,
+          })),
+          skipDuplicates: true,
+        });
+      }
     });
   }
 
@@ -963,6 +977,7 @@ export async function exportCsv(req: Request, eventId: string, type: "results" |
       const scoreMap = Object.fromEntries(
         assignment.scores.map((score) => [score.criterion.key, score.value]),
       );
+      const hasScores = assignment.scores.length > 0;
       const { total } = computeWeightedTotal(
         assignment.scores.map((score) => ({
           criterionKey: score.criterion.key,
@@ -970,6 +985,10 @@ export async function exportCsv(req: Request, eventId: string, type: "results" |
         })),
         data.criteria,
       );
+      const weightedTotal =
+        assignment.status === AssignmentStatus.PENDING && !hasScores
+          ? ""
+          : (roundDisplay(total) ?? "");
       return [
         assignment.judgeId,
         judgeName.get(assignment.judgeId) ?? "",
@@ -977,7 +996,7 @@ export async function exportCsv(req: Request, eventId: string, type: "results" |
         projectTitle.get(assignment.projectId) ?? "",
         assignment.status,
         ...criterionKeys.map((key) => scoreMap[key] ?? ""),
-        roundDisplay(total) ?? "",
+        weightedTotal,
         assignment.comment,
         assignment.submittedAt?.toISOString() ?? "",
       ];
@@ -1050,8 +1069,11 @@ export async function getDashboard(eventId: string) {
 
   const submitted = data.assignments.filter((a) => a.status === "SUBMITTED").length;
   const pending = data.assignments.length - submitted;
-  const percentComplete =
-    data.assignments.length === 0 ? 0 : (submitted / data.assignments.length) * 100;
+  const targetCoverage = data.projects.length * data.event.reviewsPerProject;
+  const coveragePercent =
+    targetCoverage === 0 ? 0 : (submitted / targetCoverage) * 100;
+  // Required-review completion (not merely "all assigned rows submitted").
+  const percentComplete = Math.round(coveragePercent * 10) / 10;
 
   const judges = await prisma.eventRole.findMany({
     where: { eventId, role: EventRoleType.JUDGE },
@@ -1108,6 +1130,13 @@ export async function getDashboard(eventId: string) {
         message: `${project.title} has only ${project.reviewCount} reviews`,
       });
     }
+    if (project.flags.includes("below_target")) {
+      flags.push({
+        type: "below_target",
+        targetId: project.id,
+        message: `${project.title} has ${project.reviewCount} of ${data.event.reviewsPerProject} target reviews`,
+      });
+    }
     if (project.flags.includes("duplicate")) {
       flags.push({
         type: "duplicate",
@@ -1132,7 +1161,9 @@ export async function getDashboard(eventId: string) {
       assignments: data.assignments.length,
       submitted,
       pending,
-      percentComplete: Math.round(percentComplete * 10) / 10,
+      percentComplete,
+      targetCoverage,
+      coveragePercent: Math.round(coveragePercent * 10) / 10,
     },
     judges: judges.map((row) => {
       const submitted = row.user.assignments.filter((a) => a.status === "SUBMITTED").length;
@@ -1214,6 +1245,20 @@ function summarizeAudit(
       return `Denied peer score access for ${target}`;
     case "export.csv":
       return `Exported CSV (${JSON.stringify(data)})`;
+    case "score.submit":
+      return `Submitted scores on ${target}`;
+    case "score.save":
+      return `Saved score draft on ${target}`;
+    case "score.edit_after_submit":
+      return `Edited submitted scores on ${target}`;
+    case "team.invite_rotate":
+      return `Rotated invite link for ${target}`;
+    case "rubric.update":
+      return "Updated rubric criteria";
+    case "judge.invite":
+      return `Invited judge (${JSON.stringify(data)})`;
+    case "project.submit":
+      return `Submitted ${target}`;
     default:
       return `${action} on ${target}`;
   }

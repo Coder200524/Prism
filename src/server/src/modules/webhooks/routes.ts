@@ -3,6 +3,7 @@ import {
   createWebhookSchema,
   updateWebhookSchema,
 } from "@dogfood/shared";
+import { assertApiKeyEventScope } from "../../lib/api-key-scope.js";
 import { forbidden, notFound } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth, requireEventRole } from "../../middleware/authorize.js";
@@ -20,6 +21,8 @@ async function checkWebhookAccess(req: Request, webhookId: string) {
   if (!webhook) {
     throw notFound("Webhook not found");
   }
+
+  assertApiKeyEventScope(req, webhook.eventId);
 
   const user = req.user as { id: string; platformRole: string };
   if (user.platformRole !== "ADMIN") {

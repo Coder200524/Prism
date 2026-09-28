@@ -103,34 +103,39 @@ describe("Certificates API (/api/me/certificates & /api/events/:eventId/certific
       },
     });
 
-    // 1. Organizer manually issues certificates (before publish)
-    const issueRes1 = await request(app)
+    const beforePublish = await request(app)
       .post(`/api/events/${eventId}/certificates/issue`)
       .set(authHeader(organizer.token));
-    expect(issueRes1.status).toBe(200);
-    expect(issueRes1.body.issuedCount).toBeGreaterThan(0);
+    expect(beforePublish.status).toBe(403);
+    expect(beforePublish.body.error.code).toBe("results_not_published");
 
-    // Check participant certificate (placement is null before publish)
+    await request(app)
+      .post(`/api/events/${eventId}/results/publish`)
+      .set(authHeader(organizer.token))
+      .expect(200);
+
+    const issueRes = await request(app)
+      .post(`/api/events/${eventId}/certificates/issue`)
+      .set(authHeader(organizer.token));
+    expect(issueRes.status).toBe(200);
+    expect(issueRes.body.issuedCount).toBeGreaterThan(0);
+
     const meRes1 = await request(app)
       .get("/api/me/certificates")
       .set(authHeader(participant.token));
     expect(meRes1.status).toBe(200);
-    expect(meRes1.body.certificates).toHaveLength(1);
+    expect(meRes1.body.certificates.length).toBeGreaterThan(0);
     expect(meRes1.body.certificates[0].type).toBe("participant_certificate");
-    expect(meRes1.body.certificates[0].payload.placement).toBeNull();
 
-    // 2. Publish results (which auto-issues/updates placement)
-    await request(app)
-      .post(`/api/events/${eventId}/results/publish`)
-      .set(authHeader(organizer.token));
+    const eventsList = await request(app).get("/api/events");
+    expect(eventsList.status).toBe(200);
+    expect(Array.isArray(eventsList.body.events)).toBe(true);
 
-    // Re-issue certificates after publish
-    const issueRes2 = await request(app)
-      .post(`/api/events/${eventId}/certificates/issue`)
-      .set(authHeader(organizer.token));
-    expect(issueRes2.status).toBe(200);
+    const projectsList = await request(app).get("/api/projects");
+    expect(projectsList.status).toBe(200);
+    expect(Array.isArray(projectsList.body.items)).toBe(true);
 
-    // 3. Judge A checks own certificates
+    // Judge A checks own certificates
     const judgeRes = await request(app)
       .get("/api/me/certificates")
       .set(authHeader(judgeA.token));

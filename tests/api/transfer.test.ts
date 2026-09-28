@@ -187,4 +187,259 @@ imported_j2@test.local,Imported Judge 2,
     expect(badRes.status).toBe(400);
     expect(badRes.body.error.code).toBe("bad_request");
   });
+
+  it("does not overwrite existing assignment scores on JSON re-import", async () => {
+    await runSeed({ seedDemo: false, publicUrl: "http://localhost:8080" });
+
+    const admin = await createUser({
+      email: "score_imp@test.local",
+      name: "Score Imp",
+      platformRole: PlatformRole.ADMIN,
+    });
+
+    const assignment = await prisma.assignment.findFirstOrThrow({
+      where: { eventId: "evt_01", status: "SUBMITTED" },
+      include: { scores: true },
+    });
+    expect(assignment.scores.length).toBeGreaterThan(0);
+    const originalValues = assignment.scores.map((s) => ({
+      criterionId: s.criterionId,
+      value: s.value,
+    }));
+    const originalComment = assignment.comment;
+
+    await prisma.criterionScore.update({
+      where: {
+        assignmentId_criterionId: {
+          assignmentId: assignment.id,
+          criterionId: originalValues[0]!.criterionId,
+        },
+      },
+      data: { value: 1 },
+    });
+    await prisma.assignment.update({
+      where: { id: assignment.id },
+      data: { comment: "Organizer protected comment" },
+    });
+
+    const exportRes = await request(app)
+      .get("/api/events/evt_01/export.json")
+      .set(authHeader(admin.token));
+    expect(exportRes.status).toBe(200);
+
+    // Mutate exported score payload to a different value for the same judge/project.
+    const payload = exportRes.body as {
+      scores: Array<{
+        judgeId?: string;
+        judge?: string;
+        projectId?: string;
+        project?: string;
+        criteria?: Record<string, number>;
+        comment?: string;
+      }>;
+    };
+    for (const score of payload.scores) {
+      if (score.criteria) {
+        for (const key of Object.keys(score.criteria)) {
+          score.criteria[key] = 5;
+        }
+      }
+      score.comment = "Import should not win";
+    }
+
+    const importRes = await request(app)
+      .post("/api/import?dryRun=false")
+      .set(authHeader(admin.token))
+      .send(payload);
+    expect(importRes.status).toBe(200);
+
+    const after = await prisma.assignment.findUniqueOrThrow({
+      where: { id: assignment.id },
+      include: { scores: true },
+    });
+    expect(after.comment).toBe("Organizer protected comment");
+    const protectedScore = after.scores.find(
+      (s) => s.criterionId === originalValues[0]!.criterionId,
+    );
+    expect(protectedScore?.value).toBe(1);
+
+    // Second identical import remains non-destructive.
+    const again = await request(app)
+      .post("/api/import?dryRun=false")
+      .set(authHeader(admin.token))
+      .send(payload);
+    expect(again.status).toBe(200);
+    const afterAgain = await prisma.criterionScore.findUniqueOrThrow({
+      where: {
+        assignmentId_criterionId: {
+          assignmentId: assignment.id,
+          criterionId: originalValues[0]!.criterionId,
+        },
+      },
+    });
+    expect(afterAgain.value).toBe(1);
+  }, 120000);
+
+  it("rejects cross-event references and rolls back the import", async () => {
+    const admin = await createUser({
+      email: "xevt_admin@test.local",
+      name: "XEvt Admin",
+      platformRole: PlatformRole.ADMIN,
+    });
+    const eventA = await createEvent({ name: "Import Event A" });
+    const eventB = await createEvent({ name: "Import Event B" });
+
+    const trackB = await prisma.track.create({
+      data: { eventId: eventB.id, name: "Foreign Track", description: "" },
+    });
+    const teamB = await prisma.team.create({
+      data: { eventId: eventB.id, name: "Foreign Team", inviteCode: "xevt_team" },
+    });
+
+    const beforeProjects = await prisma.project.count({ where: { eventId: eventA.id } });
+
+    const badImport = await request(app)
+      .post("/api/import?dryRun=false")
+      .set(authHeader(admin.token))
+      .send({
+        event: { id: eventA.id, name: eventA.name },
+        tracks: [],
+        prizes: [],
+        criteria: [],
+        judges: [],
+        teams: [{ id: "tm_new_a", name: "Local Team", members: [] }],
+        projects: [
+          {
+            title: "Should Not Persist",
+            teamId: teamB.id,
+            trackId: trackB.id,
+            status: "SUBMITTED",
+          },
+        ],
+        scores: [],
+      });
+
+    expect(badImport.status).toBe(400);
+    expect(badImport.body.error.message).toMatch(/does not belong to event/i);
+
+    const afterProjects = await prisma.project.count({ where: { eventId: eventA.id } });
+    expect(afterProjects).toBe(beforeProjects);
+    const leaked = await prisma.project.findFirst({
+      where: { eventId: eventA.id, title: "Should Not Persist" },
+    });
+    expect(leaked).toBeNull();
+  });
+
+  it("imports the same judge CSV twice without duplicating invites", async () => {
+    const organizer = await createUser({
+      email: "idem_jcsv@test.local",
+      name: "Idem Judge CSV",
+      platformRole: PlatformRole.ORGANIZER,
+    });
+    const event = await createEvent({ name: "Idempotent Judge CSV" });
+    await grantEventRole(organizer.id, event.id, EventRoleType.ORGANIZER);
+
+    const csvData = `email,name,tracks
+"alice@test.local","Alice Judge",
+alice@test.local,Alice Dup Row,
+bob@test.local,Bob Judge,
+`;
+
+    const first = await request(app)
+      .post(`/api/events/${event.id}/import/judges.csv?dryRun=false`)
+      .set(authHeader(organizer.token))
+      .set("Content-Type", "text/csv")
+      .send(csvData);
+    expect(first.status).toBe(200);
+    expect(first.body.summary.invitesCreated).toBe(2);
+
+    const second = await request(app)
+      .post(`/api/events/${event.id}/import/judges.csv?dryRun=false`)
+      .set(authHeader(organizer.token))
+      .set("Content-Type", "text/csv")
+      .send(csvData);
+    expect(second.status).toBe(200);
+    expect(second.body.summary.invitesCreated).toBe(0);
+    expect(second.body.summary.skippedExisting).toBe(2);
+
+    const invites = await prisma.judgeInvite.findMany({ where: { eventId: event.id } });
+    expect(invites).toHaveLength(2);
+    const emails = invites.map((i) => i.email.toLowerCase()).sort();
+    expect(emails).toEqual(["alice@test.local", "bob@test.local"]);
+  });
+
+  it("does not duplicate prizes on identical JSON re-import", async () => {
+    const admin = await createUser({
+      email: "prize_imp@test.local",
+      name: "Prize Imp",
+      platformRole: PlatformRole.ADMIN,
+    });
+
+    const payload = {
+      event: { id: "evt_prize_idem", name: "Prize Idempotency Event" },
+      tracks: [{ id: "trk_prize_1", name: "Main" }],
+      prizes: [
+        {
+          id: "prz_first",
+          name: "Grand Prize",
+          description: "Best overall",
+          value: "$1000",
+          place: 1,
+          trackId: "trk_prize_1",
+        },
+        {
+          id: "prz_second",
+          name: "Runner Up",
+          description: "Second place",
+          value: "$250",
+          place: 2,
+        },
+      ],
+      criteria: [],
+      judges: [],
+      teams: [],
+      projects: [],
+      scores: [],
+    };
+
+    const first = await request(app)
+      .post("/api/import?dryRun=false")
+      .set(authHeader(admin.token))
+      .send(payload);
+    expect(first.status).toBe(200);
+
+    const afterFirst = await prisma.prize.findMany({
+      where: { eventId: "evt_prize_idem" },
+      orderBy: { name: "asc" },
+    });
+    expect(afterFirst).toHaveLength(2);
+    const snapshot = afterFirst.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      value: p.value,
+      place: p.place,
+    }));
+
+    const second = await request(app)
+      .post("/api/import?dryRun=false")
+      .set(authHeader(admin.token))
+      .send(payload);
+    expect(second.status).toBe(200);
+
+    const afterSecond = await prisma.prize.findMany({
+      where: { eventId: "evt_prize_idem" },
+      orderBy: { name: "asc" },
+    });
+    expect(afterSecond).toHaveLength(2);
+    expect(
+      afterSecond.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        value: p.value,
+        place: p.place,
+      })),
+    ).toEqual(snapshot);
+  });
 });

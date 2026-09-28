@@ -45,8 +45,9 @@ Authorization: Bearer demo-participant-token
 python3 run.py .dogfood.toml > acceptance-report.txt
 ```
 
-(or `python` if that is your interpreter). The committed `acceptance-report.txt` should show
-all claimed T1/T2 checks as PASS.
+(or `python` if that is your interpreter). The official checker exercises **T1 and T2 only**.
+The committed `acceptance-report.txt` should show those checks as PASS. T3/T4 may be claimed
+in `.dogfood.toml` and implemented in the app, but they are **not** verified by `run.py`.
 
 ## Tests
 
@@ -97,6 +98,15 @@ API permission / deadline / isolation / lifecycle / seed idempotency.
 - Organizer abuse dashboard (fraud flagging for new accounts, void/restore capabilities)
 - End-to-end audit logging for voting moderation
 
+### T4
+
+- Event-scoped API keys (`dfk_…`) with read/write scopes
+- OpenAPI 3.1 spec and Swagger UI (bundled, offline)
+- Bulk JSON import/export and judge/project CSV import/export
+- Verifiable issued records and participant/judge certificates
+- Embeddable public gallery widget (`/embed.js`, `/embed/gallery`, `/api/embed/gallery`)
+- Signed webhooks with retries and SSRF defenses (DNS-pinned delivery)
+
 ## Build timeline
 Planning documents (docs/SPEC.md and the build prompts) were written before kickoff, which the
 hackathon rules allow ("plan, read, sketch schemas"). No application code existed before
@@ -108,7 +118,9 @@ build. The migration folder name 20260325173000_init has a wrong date generated 
 ## Honest limitations
 
 - **No email delivery.** Team and judge invites are copy-paste URLs only.
-- **T4 not implemented** (advanced features beyond the claimed tiers).
+- **Official `run.py` verifies T1 and T2 only.** Claiming T3/T4 in `.dogfood.toml` does not
+  mean the checker exercises those features; see `acceptance-report.txt`
+  (`verified T1 T2`, `claimed but not verified: T3 T4`).
 - **Judging starts only after `submissionsClose`.** Demo Open Hack ships with submissions
   open for 7 days; organizers must close submissions (settings) before judges can submit scores.
 - **Sessions are opaque Bearer tokens in `localStorage`**, not HttpOnly cookies — fine for a

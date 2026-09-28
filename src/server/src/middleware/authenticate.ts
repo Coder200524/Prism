@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
+import { resolveRequestEventId } from "../lib/api-key-scope.js";
 import { clock } from "../lib/clock.js";
 import { forbidden } from "../lib/http-error.js";
 import { prisma } from "../lib/prisma.js";
@@ -66,15 +67,6 @@ export async function authenticate(
       return;
     }
 
-    // Check eventId scope if specified on key
-    if (apiKey.eventId) {
-      const match = req.originalUrl.match(/\/api\/events\/([^/?#]+)/);
-      if (match && match[1] && match[1] !== apiKey.eventId) {
-        next(forbidden("event_mismatch", `API key is scoped to event ${apiKey.eventId}`));
-        return;
-      }
-    }
-
     // Update lastUsedAt asynchronously
     prisma.apiKey
       .update({
@@ -92,6 +84,26 @@ export async function authenticate(
       prefix: apiKey.prefix,
       scopes: apiKey.scopes,
     };
+
+    // Enforce event scope against URL, query, body, and ID-based resources.
+    if (apiKey.eventId) {
+      try {
+        const targetEventId = await resolveRequestEventId(req);
+        if (targetEventId && targetEventId !== apiKey.eventId) {
+          next(
+            forbidden(
+              "event_mismatch",
+              `API key is scoped to event ${apiKey.eventId}`,
+            ),
+          );
+          return;
+        }
+      } catch (err) {
+        next(err);
+        return;
+      }
+    }
+
     next();
     return;
   }

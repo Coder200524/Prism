@@ -85,6 +85,12 @@ export function Layout() {
       <main className="mx-auto max-w-5xl px-4 py-8">
         <Outlet />
       </main>
+      <footer className="border-t border-slate-200">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-slate-500">
+          <span>DOGFOOD Portal</span>
+          <span>Self-hosted · Offline-capable · MIT</span>
+        </div>
+      </footer>
     </div>
   );
 }

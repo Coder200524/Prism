@@ -18,9 +18,9 @@ import { communityRouter } from "./modules/community/routes.js";
 import { apiKeysRouter } from "./modules/apikeys/routes.js";
 import { openapiRouter } from "./modules/openapi/routes.js";
 import { transferRouter } from "./modules/transfer/routes.js";
-import { recordsRouter } from "./modules/records/routes.js";
-import { embedRouter } from "./modules/embed/routes.js";
+import { embedApiRouter, embedScriptRouter } from "./modules/embed/routes.js";
 import { webhooksRouter } from "./modules/webhooks/routes.js";
+import { recordsRouter, meRecordsRouter } from "./modules/records/routes.js";
 import "./types/express.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -64,11 +64,14 @@ export function createApp(): Express {
 
   app.use("/api", openapiRouter);
   app.use("/api", transferRouter);
-  app.use("/api", embedRouter);
-  app.use("/", embedRouter);
+  // JSON embed API only under /api/embed/* so /embed/gallery stays the SPA HTML page.
+  app.use("/api/embed", embedApiRouter);
+  app.use("/", embedScriptRouter);
   app.use("/api", webhooksRouter);
+  // Only mount under /api/records — a catch-all GET /:id on /api would
+  // intercept /api/events, /api/projects, and other single-segment routes.
   app.use("/api/records", recordsRouter);
-  app.use("/api", recordsRouter);
+  app.use("/api/me", meRecordsRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/api-keys", apiKeysRouter);

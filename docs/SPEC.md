@@ -431,7 +431,9 @@ If `fixtures.json` contains non-integer scores, change `CriterionScore.value` to
 - `isVisible(event)` → `publishedAt !== null`
 - `submissionsOpen(event, now)` → `now >= submissionsOpen && now < submissionsClose`
 - `judgingOpen(event, now)` → `now >= submissionsClose && resultsPublishedAt === null && (judgingClose === null || now < judgingClose)`
-- `phase(event, now)` → `"draft" | "upcoming" | "submissions" | "judging" | "results"`
+- `phase(event, now)` → `"draft" | "upcoming" | "submissions" | "judging" | "closed" | "results"`
+  (`closed` means submissions ended and judging is no longer open — either `judgingClose` has
+  passed or an equivalent closed window — and results are not yet published)
 
 Every time-based check in the server uses these functions and `clock.now()`. Never `new Date()`
 directly in business logic. The server clock is the only clock; client time is never trusted.

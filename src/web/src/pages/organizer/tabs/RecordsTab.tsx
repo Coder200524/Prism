@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { apiRequest } from "../../../api/client";
 import {
   useEventCertificates,
   useIssueCertificates,
@@ -58,17 +59,37 @@ export function RecordsTab({ eventId }: Props) {
               Verifiable Certificates & Records
             </h2>
             <p className="mt-1 text-sm text-stone-600">
-              Issue cryptographic HMAC-SHA256 signed certificates to winners, participants, and judges.
+              Issue cryptographic Ed25519 signed certificates to winners, participants, and judges.
+              Certificates become available after results are published.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleIssueCertificates}
-            disabled={issueCertificatesMutation.isPending}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {issueCertificatesMutation.isPending ? "Issuing..." : "Issue Certificates Now"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleIssueCertificates}
+              disabled={issueCertificatesMutation.isPending}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {issueCertificatesMutation.isPending ? "Issuing..." : "Issue Certificates Now"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void apiRequest<{ kid: string }>("/api/admin/records/keys/rotate", {
+                  method: "POST",
+                })
+                  .then((body) => {
+                    alert(`Signing key rotated. New kid: ${body.kid}`);
+                  })
+                  .catch((err: Error) => {
+                    alert(err.message || "Key rotation failed (admin only).");
+                  });
+              }}
+              className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            >
+              Rotate signing key
+            </button>
+          </div>
         </div>
       </div>
 

@@ -78,7 +78,7 @@ describe("Tier 4 Full Lifecycle Integration Test", () => {
       .post(`/api/events/${eventId}/webhooks`)
       .set(authHeader(organizer.token))
       .send({
-        url: "https://example.com/webhook-receiver",
+        url: "https://8.8.8.8/webhook-receiver",
         events: ["project.submitted", "record.issued"],
       })
       .expect(201);
@@ -140,7 +140,11 @@ describe("Tier 4 Full Lifecycle Integration Test", () => {
       .set(authHeader(alice.token))
       .expect(200);
 
-    // Issue Certificates
+    await request(app)
+      .post(`/api/events/${eventId}/results/publish`)
+      .set(authHeader(organizer.token))
+      .expect(200);
+
     const issueRes = await request(app)
       .post(`/api/events/${eventId}/certificates/issue`)
       .set(authHeader(organizer.token))

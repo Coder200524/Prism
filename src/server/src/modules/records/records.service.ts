@@ -4,7 +4,7 @@ import type { VerifyRecordBody } from "@dogfood/shared";
 import { config } from "../../config.js";
 import { audit } from "../../lib/audit.js";
 import { clock } from "../../lib/clock.js";
-import { notFound } from "../../lib/http-error.js";
+import { notFound, forbidden } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import {
   canonicalize,
@@ -366,6 +366,12 @@ export async function issueCertificates(eventId: string, req?: Request) {
   const event = await prisma.event.findUnique({ where: { id: eventId } });
   if (!event) {
     throw notFound("Event not found");
+  }
+  if (!event.resultsPublishedAt) {
+    throw forbidden(
+      "results_not_published",
+      "Certificates can only be issued after results are published",
+    );
   }
 
   const projects = await prisma.project.findMany({

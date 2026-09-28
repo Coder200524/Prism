@@ -10,7 +10,7 @@ import {
   grantEventRole,
   resetDatabase,
 } from "../helpers/index.js";
-
+import { prisma } from "../../src/server/src/lib/prisma.js";
 describe("API Keys API (/api/events/:eventId/api-keys & /api/api-keys)", () => {
   const app = getTestApp();
 
@@ -144,5 +144,128 @@ describe("API Keys API (/api/events/:eventId/api-keys & /api/api-keys)", () => {
       .set(authHeader(apiKey));
     expect(res2.status).toBe(403);
     expect(res2.body.error.code).toBe("event_mismatch");
+  });
+
+  it("blocks event-scoped keys from indirect Event B resources by id", async () => {
+    const organizer = await createUser({
+      email: "scope_org@test.local",
+      name: "Scope Org",
+      platformRole: PlatformRole.ORGANIZER,
+    });
+    const eventA = await createEvent({ name: "Scoped A" });
+    const eventB = await createEvent({ name: "Scoped B" });
+    await grantEventRole(organizer.id, eventA.id, EventRoleType.ORGANIZER);
+    await grantEventRole(organizer.id, eventB.id, EventRoleType.ORGANIZER);
+
+    const teamB = await prisma.team.create({
+      data: { eventId: eventB.id, name: "Team B", inviteCode: "scope_b" },
+    });
+    const projectB = await prisma.project.create({
+      data: {
+        eventId: eventB.id,
+        teamId: teamB.id,
+        title: "Project B",
+        summary: "B",
+        repoUrl: "https://example.com/b",
+        demoUrl: "",
+        status: "SUBMITTED",
+        submittedAt: new Date(),
+      },
+    });
+    const webhookB = await prisma.webhook.create({
+      data: {
+        eventId: eventB.id,
+        url: "https://8.8.8.8/hook",
+        secret: "encrypted-placeholder",
+        events: ["ping"],
+        createdById: organizer.id,
+      },
+    });
+
+    const createRes = await request(app)
+      .post(`/api/events/${eventA.id}/api-keys`)
+      .set(authHeader(organizer.token))
+      .send({ name: "A-only", scopes: ["read", "write"] });
+    expect(createRes.status).toBe(201);
+    const keyA = createRes.body.key as string;
+
+    const okA = await request(app)
+      .get(`/api/events/${eventA.id}`)
+      .set(authHeader(keyA));
+    expect(okA.status).toBe(200);
+
+    const projectDenied = await request(app)
+      .get(`/api/projects/${projectB.id}`)
+      .set(authHeader(keyA));
+    expect(projectDenied.status).toBe(403);
+    expect(projectDenied.body.error.code).toBe("event_mismatch");
+
+    const webhookDenied = await request(app)
+      .get(`/api/webhooks/${webhookB.id}`)
+      .set(authHeader(keyA));
+    expect(webhookDenied.status).toBe(403);
+    expect(webhookDenied.body.error.code).toBe("event_mismatch");
+
+    // Session auth still works for the same organizer on event B.
+    const sessionOk = await request(app)
+      .get(`/api/projects/${projectB.id}`)
+      .set(authHeader(organizer.token));
+    expect(sessionOk.status).toBe(200);
+  });
+
+  it("blocks event-scoped keys from revoking another event's API key", async () => {
+    const organizer = await createUser({
+      email: "revoke_scope@test.local",
+      name: "Revoke Scope Org",
+      platformRole: PlatformRole.ORGANIZER,
+    });
+    const eventA = await createEvent({ name: "Revoke Event A" });
+    const eventB = await createEvent({ name: "Revoke Event B" });
+    await grantEventRole(organizer.id, eventA.id, EventRoleType.ORGANIZER);
+    await grantEventRole(organizer.id, eventB.id, EventRoleType.ORGANIZER);
+
+    const callerARes = await request(app)
+      .post(`/api/events/${eventA.id}/api-keys`)
+      .set(authHeader(organizer.token))
+      .send({ name: "Caller A", scopes: ["read", "write"] });
+    expect(callerARes.status).toBe(201);
+    const callerA = callerARes.body.key as string;
+
+    const targetARes = await request(app)
+      .post(`/api/events/${eventA.id}/api-keys`)
+      .set(authHeader(organizer.token))
+      .send({ name: "Target A", scopes: ["read"] });
+    expect(targetARes.status).toBe(201);
+    const targetAId = targetARes.body.id as string;
+
+    const keyBRes = await request(app)
+      .post(`/api/events/${eventB.id}/api-keys`)
+      .set(authHeader(organizer.token))
+      .send({ name: "Key B", scopes: ["read", "write"] });
+    expect(keyBRes.status).toBe(201);
+    const keyBId = keyBRes.body.id as string;
+
+    // Event A key may revoke another key belonging to Event A.
+    const revokeOwn = await request(app)
+      .delete(`/api/api-keys/${targetAId}`)
+      .set(authHeader(callerA));
+    expect(revokeOwn.status).toBe(200);
+    expect(revokeOwn.body.revokedAt).toBeDefined();
+
+    // Event A key must not revoke Event B's key.
+    const revokeOther = await request(app)
+      .delete(`/api/api-keys/${keyBId}`)
+      .set(authHeader(callerA));
+    expect(revokeOther.status).toBe(403);
+    expect(revokeOther.body.error.code).toBe("event_mismatch");
+
+    const keyBRow = await prisma.apiKey.findUniqueOrThrow({ where: { id: keyBId } });
+    expect(keyBRow.revokedAt).toBeNull();
+
+    // Session organizer can still revoke Event B key.
+    const sessionRevoke = await request(app)
+      .delete(`/api/api-keys/${keyBId}`)
+      .set(authHeader(organizer.token));
+    expect(sessionRevoke.status).toBe(200);
   });
 });

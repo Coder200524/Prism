@@ -47,8 +47,8 @@ Computed on every results/dashboard/CSV read — nothing derived is stored.
 5. Rescale: \(\text{normalized} = \mathrm{clamp}(\mu_g + z \cdot \sigma_g,\ \text{rubricMin},\ \text{rubricMax})\).
 6. Project `raw_score` = mean of totals; `normalized_score` = mean of normalized values;
    `review_count` = number of submitted reviews.
-7. Flags: `under_reviewed` if `review_count < min(2, reviewsPerProject)`; `duplicate` if
-   `duplicateOfId` set (excluded from ranking).
+7. Flags: `under_reviewed` if `review_count < min(2, reviewsPerProject)`; `below_target` if
+   `review_count < reviewsPerProject`; `duplicate` if `duplicateOfId` set (excluded from ranking).
 8. Rank per track by normalized desc, then raw desc, then review count desc, then id. Zero-review
    projects stay unranked at the end.
 

@@ -302,7 +302,7 @@ export async function createTrack(req: Request, eventId: string, body: CreateTra
         description: body.description,
       },
     });
-    await audit(req, "event.track.create", { type: "track", id: track.id, eventId }, {
+    await audit(req, "track.create", { type: "track", id: track.id, eventId }, {
       name: track.name,
     });
     return { track };
@@ -331,7 +331,7 @@ export async function updateTrack(
         ...(body.description !== undefined ? { description: body.description } : {}),
       },
     });
-    await audit(req, "event.track.update", { type: "track", id: trackId, eventId }, body as Record<string, unknown>);
+    await audit(req, "track.update", { type: "track", id: trackId, eventId }, body as Record<string, unknown>);
     return { track: updated };
   } catch (error) {
     if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2002") {
@@ -351,7 +351,7 @@ export async function deleteTrack(req: Request, eventId: string, trackId: string
   }
 
   await prisma.track.delete({ where: { id: trackId } });
-  await audit(req, "event.track.delete", { type: "track", id: trackId, eventId });
+  await audit(req, "track.delete", { type: "track", id: trackId, eventId });
 }
 
 export async function createPrize(req: Request, eventId: string, body: CreatePrizeBody) {
@@ -373,7 +373,7 @@ export async function createPrize(req: Request, eventId: string, body: CreatePri
       trackId: body.trackId ?? null,
     },
   });
-  await audit(req, "event.prize.create", { type: "prize", id: prize.id, eventId });
+  await audit(req, "prize.create", { type: "prize", id: prize.id, eventId });
   return { prize };
 }
 
@@ -401,7 +401,7 @@ export async function updatePrize(
       ...(body.trackId !== undefined ? { trackId: body.trackId } : {}),
     },
   });
-  await audit(req, "event.prize.update", { type: "prize", id: prizeId, eventId }, body as Record<string, unknown>);
+  await audit(req, "prize.update", { type: "prize", id: prizeId, eventId }, body as Record<string, unknown>);
   return { prize: updated };
 }
 
@@ -409,7 +409,7 @@ export async function deletePrize(req: Request, eventId: string, prizeId: string
   const prize = await prisma.prize.findFirst({ where: { id: prizeId, eventId } });
   if (!prize) throw notFound("Prize not found");
   await prisma.prize.delete({ where: { id: prizeId } });
-  await audit(req, "event.prize.delete", { type: "prize", id: prizeId, eventId });
+  await audit(req, "prize.delete", { type: "prize", id: prizeId, eventId });
 }
 
 export function submissionsClosedError(closeAt: Date): HttpError {

@@ -8,6 +8,7 @@ import {
   seedPermissionScenario,
   type Scenario,
 } from "../helpers/index.js";
+import { prisma } from "../../src/server/src/lib/prisma.js";
 
 type Actor = "anonymous" | "participant" | "judgeA" | "judgeB" | "organizer" | "admin";
 
@@ -25,6 +26,7 @@ type MatrixCase = {
   method: "get" | "post" | "patch" | "put" | "delete";
   path: (s: Scenario) => string;
   body?: (s: Scenario) => unknown;
+  prepare?: (s: Scenario) => Promise<void>;
   expected: Record<Actor, number>;
 };
 
@@ -793,6 +795,12 @@ describe("api/permission-matrix", () => {
       name: "POST /api/events/:eventId/certificates/issue",
       method: "post",
       path: (s) => `/api/events/${s.eventId}/certificates/issue`,
+      prepare: async (s) => {
+        await prisma.event.update({
+          where: { id: s.eventId },
+          data: { resultsPublishedAt: s.now },
+        });
+      },
       expected: {
         anonymous: 401,
         participant: 403,
@@ -822,6 +830,9 @@ describe("api/permission-matrix", () => {
       beforeEach(async () => {
         await resetDatabase();
         scenario = await seedPermissionScenario();
+        if (matrixCase.prepare) {
+          await matrixCase.prepare(scenario);
+        }
       });
 
       for (const actor of ACTORS) {

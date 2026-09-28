@@ -7,7 +7,7 @@ import { badRequest, notFound } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { Prisma } from "@prisma/client";
 import { decryptPrivateKey, encryptPrivateKey } from "../records/crypto.js";
-import { validateWebhookUrl } from "./ssrf.js";
+import { validateWebhookUrl, safeWebhookFetch } from "./ssrf.js";
 
 const RETRY_BACKOFF_MS = [
   1 * 60 * 1000,       // 1 min
@@ -236,23 +236,26 @@ export async function deliverWebhook(deliveryId: string) {
 
   const signatureHeader = `t=${timestamp},v1=${signatureHex}`;
 
-  // 3. Dispatch HTTP request with 5s timeout
+  // 3. Dispatch HTTP request with DNS-pinned SSRF-safe client (5s timeout)
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const response = await fetch(webhook.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Dogfood-Signature": signatureHeader,
-        "X-Dogfood-Event": delivery.eventType,
-        "X-Dogfood-Delivery": delivery.id,
+    const response = await safeWebhookFetch(
+      webhook.url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Dogfood-Signature": signatureHeader,
+          "X-Dogfood-Event": delivery.eventType,
+          "X-Dogfood-Delivery": delivery.id,
+        },
+        body: rawBody,
+        signal: controller.signal,
       },
-      body: rawBody,
-      signal: controller.signal,
-      redirect: "manual",
-    });
+      { pinnedIp: ssrfCheck.ip },
+    );
 
     clearTimeout(timeout);
     const attempts = delivery.attempts + 1;
@@ -310,18 +313,48 @@ export async function deliverWebhook(deliveryId: string) {
 
 export async function processPendingDeliveries(limit = 20) {
   const now = clock.now();
+  // Reclaim deliveries stuck in processing after a worker crash (lease expiry).
+  await prisma.webhookDelivery.updateMany({
+    where: {
+      status: "processing",
+      nextAttemptAt: { lte: now },
+    },
+    data: { status: "pending" },
+  });
+
   const pending = await prisma.webhookDelivery.findMany({
     where: {
       status: "pending",
       nextAttemptAt: { lte: now },
     },
     take: limit,
+    orderBy: { createdAt: "asc" },
   });
 
+  let processed = 0;
   for (const delivery of pending) {
-    await deliverWebhook(delivery.id);
+    const leaseUntil = new Date(now.getTime() + 5 * 60 * 1000);
+    const claimed = await prisma.webhookDelivery.updateMany({
+      where: { id: delivery.id, status: "pending" },
+      data: { status: "processing", nextAttemptAt: leaseUntil },
+    });
+    if (claimed.count === 0) continue;
+    try {
+      await deliverWebhook(delivery.id);
+      processed += 1;
+    } catch {
+      // Temporary DB/runtime failures must leave the row retryable.
+      await prisma.webhookDelivery.updateMany({
+        where: { id: delivery.id, status: "processing" },
+        data: {
+          status: "pending",
+          nextAttemptAt: new Date(clock.now().getTime() + 60_000),
+          lastError: "Worker interrupted; will retry",
+        },
+      });
+    }
   }
-  return pending.length;
+  return processed;
 }
 
 export async function testWebhook(req: Request, webhookId: string) {

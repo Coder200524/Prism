@@ -8,7 +8,7 @@ export type EventPhaseFields = {
   votingClose?: Date | null;
 };
 
-export type EventPhase = "draft" | "upcoming" | "submissions" | "judging" | "results";
+export type EventPhase = "draft" | "upcoming" | "submissions" | "judging" | "closed" | "results";
 
 export function isVisible(event: EventPhaseFields): boolean {
   return event.publishedAt !== null;
@@ -45,5 +45,6 @@ export function phase(event: EventPhaseFields, now: Date): EventPhase {
   if (event.resultsPublishedAt !== null) return "results";
   if (now < event.submissionsOpen) return "upcoming";
   if (now < event.submissionsClose) return "submissions";
-  return "judging";
+  if (judgingOpen(event, now)) return "judging";
+  return "closed";
 }
