@@ -44,7 +44,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
         where: { userId_eventId_role: { userId: req.user.id, eventId, role: "ORGANIZER" } },
       });
       if (!isOrganizer) {
-        await audit(req, "import.refused", { type: "event", id: eventId, eventId });
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
         throw forbidden("access.denied", "Must be organizer of the existing event");
       }
     }
@@ -145,7 +145,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
           : clock.now();
       
       if (subAt > computedSubmissionsClose) {
-        await audit(req, "import.refused", { type: "event", id: eventId, eventId });
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
         throw badRequest("import.invalid_project", [{ path: `projects.${i}.submittedAt`, message: "Project submittedAt cannot be after event submissionsClose" }]);
       }
     }
@@ -201,11 +201,11 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
     for (const [cKey, val] of criteriaEntries) {
       const cSpec = criteriaMapByKey.get(cKey);
       if (!cSpec) {
-        await audit(req, "import.refused", { type: "event", id: eventId, eventId });
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
         throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: "Unknown criterion" }]);
       }
       if (!Number.isInteger(val) || (val as number) < cSpec.minScore || (val as number) > cSpec.maxScore) {
-        await audit(req, "import.refused", { type: "event", id: eventId, eventId });
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
         throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: `Score must be an integer between ${cSpec.minScore} and ${cSpec.maxScore}` }]);
       }
     }
@@ -225,7 +225,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
       const projectRef = sData.projectId ?? sData.project ?? "";
       const mems = projectMembers.get(projectRef) ?? projectMembers.get(projectRef.toLowerCase());
       if (mems && mems.has(judgeEmail.toLowerCase())) {
-        await audit(req, "import.refused", { type: "event", id: eventId, eventId });
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
         throw badRequest("import.conflict", [{ path: `scores.${i}`, message: "Judge cannot score their own team" }]);
       }
     }
@@ -708,7 +708,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
     }
   }, { timeout: 30000 });
 
-  await audit(req, "import.json", { type: "event", id: eventId, eventId });
+  await audit(req, "import.json", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
 
   return {
     dryRun: false,
