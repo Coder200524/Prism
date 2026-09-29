@@ -11,7 +11,7 @@ export function AuditTab({ eventId }: { eventId: string }) {
   const [page, setPage] = useState(1);
   const auditQuery = useAuditLog(eventId, page);
 
-  if (auditQuery.isLoading) return <p className="text-slate-600">Loading audit log…</p>;
+  if (auditQuery.isLoading) return <p className="text-df-dim">Loading audit log…</p>;
   if (auditQuery.isError) return <ErrorMessage error={auditQuery.error} />;
   const data = auditQuery.data;
   if (!data) return null;
@@ -42,7 +42,7 @@ export function AuditTab({ eventId }: { eventId: string }) {
           ]}
         />
       )}
-      <div className="mt-4 flex items-center gap-3 text-sm text-slate-600">
+      <div className="mt-4 flex items-center gap-3 text-sm text-df-dim">
         <Button
           type="button"
           variant="secondary"

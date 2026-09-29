@@ -23,8 +23,8 @@ function CreateTeamForm() {
   if (inviteUrl) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Team created</h1>
-        <p className="text-sm text-slate-600">Share this invite link with teammates:</p>
+        <h1 className="text-2xl font-semibold text-df-text">Team created</h1>
+        <p className="text-sm text-df-dim">Share this invite link with teammates:</p>
         <CopyLink value={inviteUrl} />
         <Button type="button" onClick={() => navigate("/teams")}>
           Go to my teams
@@ -35,7 +35,7 @@ function CreateTeamForm() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Create team</h1>
+      <h1 className="text-2xl font-semibold text-df-text">Create team</h1>
       <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
         <Input
           label="Team name"
@@ -48,8 +48,8 @@ function CreateTeamForm() {
           {createTeam.isPending ? "Creating…" : "Create team"}
         </Button>
       </form>
-      <Link to={`/events/${eventId}`} className="text-sm text-indigo-600 hover:underline">
-        Back to event
+      <Link to={`/events/${eventId}`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+        ← Back to event
       </Link>
     </div>
   );

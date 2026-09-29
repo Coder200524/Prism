@@ -43,7 +43,7 @@ export function JudgesTab({ eventId }: { eventId: string }) {
   }
 
   if (judgesQuery.isLoading || eventQuery.isLoading) {
-    return <p className="text-slate-600">Loading judges…</p>;
+    return <p className="text-df-dim">Loading judges…</p>;
   }
   if (judgesQuery.isError) return <ErrorMessage error={judgesQuery.error} />;
   if (eventQuery.isError) return <ErrorMessage error={eventQuery.error} />;
@@ -62,10 +62,10 @@ export function JudgesTab({ eventId }: { eventId: string }) {
             required
           />
           <fieldset>
-            <legend className="text-sm font-medium text-slate-700">Preferred tracks</legend>
+            <legend className="text-sm font-medium text-df-text">Preferred tracks</legend>
             <div className="mt-2 space-y-2">
               {tracks.map((track) => (
-                <label key={track.id} className="flex items-center gap-2 text-sm text-slate-700">
+                <label key={track.id} className="flex items-center gap-2 text-sm text-df-text">
                   <input
                     type="checkbox"
                     checked={trackIds.includes(track.id)}
@@ -83,7 +83,7 @@ export function JudgesTab({ eventId }: { eventId: string }) {
         </form>
         {inviteUrl ? (
           <div className="mt-4 space-y-2">
-            <p className="text-sm text-slate-600">Copy and share this link (no email is sent):</p>
+            <p className="text-sm text-df-dim">Copy and share this link (no email is sent):</p>
             <CopyLink value={inviteUrl} />
           </div>
         ) : null}
@@ -103,7 +103,7 @@ export function JudgesTab({ eventId }: { eventId: string }) {
                 render: (row) => (
                   <div>
                     <div className="font-medium">{row.name}</div>
-                    <div className="text-xs text-slate-500">{row.email}</div>
+                    <div className="text-xs text-df-dim">{row.email}</div>
                   </div>
                 ),
               },

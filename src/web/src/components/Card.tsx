@@ -10,14 +10,16 @@ export function Card({
   actions?: ReactNode;
 }) {
   return (
-    <div className="rounded border border-slate-200 bg-white p-4">
+    <div className="border border-df-border bg-df-panel p-6">
       {title || actions ? (
-        <div className="mb-3 flex items-start justify-between gap-3">
-          {title ? <h2 className="text-lg font-semibold text-slate-900">{title}</h2> : <span />}
+        <div className="mb-6 flex items-start justify-between gap-3">
+          {title ? <h2 className="text-lg uppercase tracking-widest text-df-pink font-mono">[ {title} ]</h2> : <span />}
           {actions}
         </div>
       ) : null}
-      {children}
+      <div className="text-df-text">
+        {children}
+      </div>
     </div>
   );
 }

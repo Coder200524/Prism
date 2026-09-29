@@ -26,10 +26,10 @@ function TeamCard({
 
   return (
     <Card title={team.name}>
-      <p className="text-sm text-slate-600">{team.event?.name ?? team.eventId}</p>
+      <p className="text-sm text-df-dim">{team.event?.name ?? team.eventId}</p>
       <div className="mt-3 space-y-2 text-sm">
-        <p className="font-medium text-slate-800">Members</p>
-        <ul className="list-disc pl-5 text-slate-700">
+        <p className="font-medium text-df-text">Members</p>
+        <ul className="list-disc pl-5 text-df-text">
           {team.members.map((member) => (
             <li key={member.user.id}>
               {member.user.name} ({member.user.email})
@@ -38,7 +38,7 @@ function TeamCard({
         </ul>
       </div>
       <div className="mt-4 space-y-2">
-        <p className="text-sm font-medium text-slate-800">Invite link</p>
+        <p className="text-sm font-medium text-df-text">Invite link</p>
         <CopyLink value={inviteUrl} />
         <Button
           type="button"
@@ -58,13 +58,13 @@ function TeamCard({
             </Badge>
             <Link
               to={`/teams/${team.id}/project`}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono"
             >
               {team.project.title || "Edit project"}
             </Link>
           </>
         ) : (
-          <Link to={`/teams/${team.id}/project`} className="text-sm text-indigo-600 hover:underline">
+          <Link to={`/teams/${team.id}/project`} className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
             Create project
           </Link>
         )}
@@ -75,13 +75,13 @@ function TeamCard({
 
 function MyTeamsContent() {
   const teamsQuery = useMyTeams();
-  if (teamsQuery.isLoading) return <p className="text-slate-600">Loading teams…</p>;
+  if (teamsQuery.isLoading) return <p className="text-df-dim">Loading teams…</p>;
   if (teamsQuery.isError) return <ErrorMessage error={teamsQuery.error} />;
   const teams = teamsQuery.data?.teams ?? [];
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">My teams</h1>
+      <h1 className="text-2xl font-semibold text-df-text">My teams</h1>
       {teams.length === 0 ? (
         <EmptyState
           title="No teams yet"
