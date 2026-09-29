@@ -12,7 +12,7 @@ export function CopyLink({ value, label = "Copy link" }: { value: string; label?
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <code className="max-w-full overflow-x-auto rounded bg-slate-100 px-2 py-1 text-xs text-slate-800">
+      <code className="max-w-full overflow-x-auto rounded bg-df-panel px-2 py-1 text-xs text-df-text">
         {value}
       </code>
       <Button type="button" variant="secondary" onClick={() => void copy()}>

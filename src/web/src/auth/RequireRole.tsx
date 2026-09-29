@@ -12,7 +12,7 @@ export function RequireRole({ platformRoles, children }: RequireRoleProps) {
   const location = useLocation();
 
   if (isLoading) {
-    return <p className="text-slate-600">Loading…</p>;
+    return <p className="text-df-dim">Loading…</p>;
   }
 
   if (!isAuthenticated) {
@@ -21,7 +21,7 @@ export function RequireRole({ platformRoles, children }: RequireRoleProps) {
   }
 
   if (platformRoles && platformRoles.length > 0 && !hasPlatformRole(...platformRoles)) {
-    return <p className="text-red-600">You do not have access to this page.</p>;
+    return <p className="text-df-pink">You do not have access to this page.</p>;
   }
 
   return <>{children}</>;

@@ -56,6 +56,14 @@ describe("Bulk Import and Export API (/api/events/:eventId/export.json & /api/im
     expect(rawExport).not.toContain("tokenHash");
     expect(rawExport).not.toContain("password_hash");
 
+    // M7: Ensure inviteCode is omitted from teams
+    if (exportRes.body.teams && exportRes.body.teams.length > 0) {
+      expect(exportRes.body.teams[0]).not.toHaveProperty("inviteCode");
+    }
+
+    // M4: votes should be empty because voting is open/not closed in seed demo
+    expect(exportRes.body.votes).toEqual([]);
+
     // 2. Reset database and run dryRun import
     await resetDatabase();
     const admin = await createUser({
@@ -441,5 +449,128 @@ bob@test.local,Bob Judge,
         place: p.place,
       })),
     ).toEqual(snapshot);
+  });
+
+  it("rejects import to existing event by non-organizer and rejects API keys", async () => {
+    const admin = await createUser({ email: "imp_admin2@test.local", name: "Admin", platformRole: PlatformRole.ADMIN });
+    const evt = await createEvent({ id: "evt_secure", name: "Secure Event" });
+    const otherOrg = await createUser({ email: "other_org@test.local", name: "Other Org", platformRole: PlatformRole.ORGANIZER });
+    await createEvent({ id: "evt_other" });
+
+    // API key creation
+    const keyResRaw = await request(app)
+      .post("/api/api-keys")
+      .set(authHeader(admin.token))
+      .send({ name: "Global Key", scopes: ["read", "write"] });
+    const apiKeyStr = keyResRaw.body.key;
+
+    const payload = {
+      event: { id: evt.id, name: "Secure Event" },
+      tracks: [], prizes: [], criteria: [], judges: [], teams: [], projects: [], scores: []
+    };
+
+    // 1. Other organizer 403
+    const badOrgRes = await request(app).post("/api/import?dryRun=false").set(authHeader(otherOrg.token)).send(payload);
+    expect(badOrgRes.status).toBe(403);
+
+    const badOrgDryRes = await request(app).post("/api/import?dryRun=true").set(authHeader(otherOrg.token)).send(payload);
+    expect(badOrgDryRes.status).toBe(403);
+
+    // 2. API key 401
+    const keyRes = await request(app).post("/api/import?dryRun=false").set("Authorization", `Bearer ${apiKeyStr}`).send(payload);
+    expect(keyRes.status).toBe(401);
+  });
+
+  it("validates scores ranges, criteria, and project submittedAt", async () => {
+    const admin = await createUser({ email: "imp_admin3@test.local", name: "Admin", platformRole: PlatformRole.ADMIN });
+    const payload = {
+      event: { id: "evt_val", name: "Val Event", submissionsClose: "2026-09-28T18:00:00Z" },
+      tracks: [], prizes: [], 
+      criteria: [
+        { key: "crit1", name: "Crit 1", weight: 100, minScore: 1, maxScore: 5 }
+      ], 
+      judges: [{ email: "j1@test.local", name: "J1" }, { email: "j2@test.local", name: "J2" }], 
+      teams: [
+        { name: "Team 1", members: ["j1@test.local"] }
+      ], 
+      projects: [
+        { title: "Proj 1", team: "Team 1", submittedAt: "2026-09-29T18:00:00Z" },
+        { title: "Proj 2", team: "Team 1", submittedAt: "2026-09-27T18:00:00Z" }
+      ], 
+      scores: [
+        { project: "Proj 2", judge: "j2@test.local", criteria: { "crit1": 10 } },
+        { project: "Proj 2", judge: "j2@test.local", criteria: { "crit_missing": 3 } },
+        { project: "Proj 2", judge: "j1@test.local", criteria: { "crit1": 3 } }
+      ]
+    };
+
+    // 1. Late submittedAt
+    const p1 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p1.status).toBe(400);
+    expect(p1.body.error.details[0].message).toMatch(/after event submissionsClose/);
+
+    // fix submittedAt
+    payload.projects[0].submittedAt = "2026-09-27T18:00:00Z";
+
+    // 2. Out of range score
+    const p2 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p2.status).toBe(400);
+    expect(p2.body.error.details[0].message).toMatch(/Score must be an integer between 1 and 5/);
+
+    // fix out of range score
+    payload.scores[0].criteria["crit1"] = 3;
+
+    // 3. Unknown criterion
+    const p3 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p3.status).toBe(400);
+    expect(JSON.stringify(p3.body)).toMatch(/Unknown criterion/);
+
+    // fix unknown criterion
+    payload.scores[1].criteria = { "crit1": 3 };
+
+    // 4. Judge conflict of interest
+    const p4 = await request(app).post("/api/import?dryRun=false").set(authHeader(admin.token)).send(payload);
+    expect(p4.status).toBe(400);
+    expect(p4.body.error.details[0].message).toMatch(/Judge cannot score their own team/);
+  });
+  it("exports votes only when voting is closed and excludes voided votes", async () => {
+    const admin = await createUser({ email: "votes_admin@test.local", name: "Admin", platformRole: PlatformRole.ADMIN });
+    const event = await createEvent({ id: "evt_votes", name: "Votes Event" });
+    
+    // Create a track and project
+    const track = await prisma.track.create({ data: { id: "tr_votes", eventId: event.id, name: "Track 1" } });
+    const team = await prisma.team.create({ data: { id: "tm_votes", eventId: event.id, name: "Team 1", inviteCode: "tm_votes_code" } });
+    const project = await prisma.project.create({
+      data: { id: "pr_votes", eventId: event.id, teamId: team.id, trackId: track.id, title: "Proj 1", summary: "Summary" }
+    });
+    const voter1 = await createUser({ email: "voter1@test.local", name: "v1" });
+    const voter2 = await createUser({ email: "voter2@test.local", name: "v2" });
+
+    // Create some votes
+    const validVote = await prisma.vote.create({
+      data: { id: "v1", eventId: event.id, trackId: track.id, projectId: project.id, voterId: voter1.id, ipHash: "ip", userAgentHash: "ua" }
+    });
+    const voidedVote = await prisma.vote.create({
+      data: { id: "v2", eventId: event.id, trackId: track.id, projectId: project.id, voterId: voter2.id, voidedAt: new Date(), ipHash: "ip", userAgentHash: "ua" }
+    });
+
+    // Case 1: Voting is open (votingClose is in the future)
+    await prisma.event.update({
+      where: { id: event.id },
+      data: { votingOpen: new Date(Date.now() - 10000), votingClose: new Date(Date.now() + 10000) }
+    });
+    const resOpen = await request(app).get(`/api/events/${event.id}/export.json`).set(authHeader(admin.token));
+    expect(resOpen.status).toBe(200);
+    expect(resOpen.body.votes).toEqual([]);
+
+    // Case 2: Voting is closed (votingClose is in the past)
+    await prisma.event.update({
+      where: { id: event.id },
+      data: { votingClose: new Date(Date.now() - 1000) }
+    });
+    const resClosed = await request(app).get(`/api/events/${event.id}/export.json`).set(authHeader(admin.token));
+    expect(resClosed.status).toBe(200);
+    expect(resClosed.body.votes).toHaveLength(1); // Only the valid vote
+    expect(resClosed.body.votes[0].projectId).toBe(project.id);
   });
 });

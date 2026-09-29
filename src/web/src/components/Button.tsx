@@ -6,9 +6,9 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const styles = {
-  primary: "bg-indigo-600 text-white hover:bg-indigo-500",
-  secondary: "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50",
-  danger: "bg-red-600 text-white hover:bg-red-500",
+  primary: "bg-df-pink text-df-bg hover:bg-df-bg hover:text-df-pink border border-df-pink transition-colors",
+  secondary: "bg-transparent text-df-text border border-df-border hover:border-df-cyan hover:text-df-cyan transition-colors",
+  danger: "bg-transparent text-df-pink border border-df-pink hover:bg-df-pink hover:text-df-bg transition-colors",
 };
 
 export function Button({
@@ -20,7 +20,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`rounded px-4 py-2 text-sm font-medium disabled:opacity-50 ${styles[variant]} ${className}`}
+      className={`px-4 py-2 text-[11px] font-bold font-mono disabled:opacity-50 uppercase tracking-[0.18em] ${styles[variant]} ${className}`}
       {...props}
     >
       {children}

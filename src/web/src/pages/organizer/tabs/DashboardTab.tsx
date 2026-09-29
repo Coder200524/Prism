@@ -10,12 +10,12 @@ function ProgressBar({ value, label }: { value: number; label: string }) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div>
-      <div className="mb-1 flex justify-between text-sm text-slate-600">
+      <div className="mb-1 flex justify-between text-sm text-df-dim">
         <span>{label}</span>
         <span>{clamped.toFixed(1)}%</span>
       </div>
-      <div className="h-2 w-full rounded bg-slate-100">
-        <div className="h-2 rounded bg-indigo-600" style={{ width: `${clamped}%` }} />
+      <div className="h-2 w-full rounded bg-df-panel">
+        <div className="h-2 rounded bg-df-pink" style={{ width: `${clamped}%` }} />
       </div>
     </div>
   );
@@ -24,7 +24,7 @@ function ProgressBar({ value, label }: { value: number; label: string }) {
 export function DashboardTab({ eventId }: { eventId: string }) {
   const dashboardQuery = useDashboard(eventId, true);
 
-  if (dashboardQuery.isLoading) return <p className="text-slate-600">Loading dashboard…</p>;
+  if (dashboardQuery.isLoading) return <p className="text-df-dim">Loading dashboard…</p>;
   if (dashboardQuery.isError) return <ErrorMessage error={dashboardQuery.error} />;
   const data = dashboardQuery.data;
   if (!data) return null;
@@ -32,7 +32,7 @@ export function DashboardTab({ eventId }: { eventId: string }) {
   return (
     <div className="space-y-6">
       <Card title="Judging progress">
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-df-dim">
           Updated <DateTime value={data.generatedAt} /> · refreshes every 5 seconds
         </p>
         <div className="space-y-4">
@@ -41,19 +41,19 @@ export function DashboardTab({ eventId }: { eventId: string }) {
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
           <div>
-            <dt className="text-slate-500">Projects</dt>
+            <dt className="text-df-dim">Projects</dt>
             <dd className="font-medium">{data.totals.projects}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Assignments</dt>
+            <dt className="text-df-dim">Assignments</dt>
             <dd className="font-medium">{data.totals.assignments}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Submitted</dt>
+            <dt className="text-df-dim">Submitted</dt>
             <dd className="font-medium">{data.totals.submitted}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Pending</dt>
+            <dt className="text-df-dim">Pending</dt>
             <dd className="font-medium">{data.totals.pending}</dd>
           </div>
         </dl>
@@ -136,7 +136,7 @@ export function DashboardTab({ eventId }: { eventId: string }) {
             {data.flags.map((flag, index) => (
               <li key={`${flag.type}-${flag.targetId}-${index}`} className="flex gap-2">
                 <Badge tone="amber">{flag.type}</Badge>
-                <span className="text-slate-700">{flag.message}</span>
+                <span className="text-df-text">{flag.message}</span>
               </li>
             ))}
           </ul>

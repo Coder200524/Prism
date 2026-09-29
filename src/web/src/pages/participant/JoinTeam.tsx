@@ -11,19 +11,19 @@ function JoinTeamForm() {
   const previewQuery = useInvitePreview(code);
   const joinMutation = useJoinTeam(code);
 
-  if (previewQuery.isLoading) return <p className="text-slate-600">Loading invite…</p>;
+  if (previewQuery.isLoading) return <p className="text-df-dim">Loading invite…</p>;
   if (previewQuery.isError) return <ErrorMessage error={previewQuery.error} />;
   const preview = previewQuery.data;
   if (!preview) return null;
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Join team</h1>
+      <h1 className="text-2xl font-semibold text-df-text">Join team</h1>
       <Card>
-        <p className="text-slate-800">
+        <p className="text-df-text">
           <span className="font-medium">{preview.teamName}</span> in {preview.eventName}
         </p>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-df-dim">
           {preview.memberCount} / {preview.maxTeamSize} members
         </p>
       </Card>
@@ -37,7 +37,7 @@ function JoinTeamForm() {
       >
         {joinMutation.isPending ? "Joining…" : "Join team"}
       </Button>
-      <Link to="/" className="block text-sm text-indigo-600 hover:underline">
+      <Link to="/" className="block text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
         Cancel
       </Link>
     </div>

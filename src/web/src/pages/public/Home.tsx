@@ -25,6 +25,12 @@ export function HomePage() {
         >
           START BUILDING
         </Link>
+        <a 
+          href="mailto:hello@codecolosseum.com"
+          className="bg-transparent text-white/90 border border-white/30 font-semibold text-sm px-7 py-3.5 rounded-md hover:bg-white/10 transition-colors uppercase tracking-wide backdrop-blur-sm"
+        >
+          TALK TO US
+        </a>
       </div>
     </div>
   );

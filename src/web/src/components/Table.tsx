@@ -14,22 +14,22 @@ type TableProps<T> = {
 
 export function Table<T>({ columns, rows, rowKey }: TableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded border border-slate-200">
+    <div className="overflow-x-auto rounded border border-df-border">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead className="bg-slate-50">
+        <thead className="bg-df-panel">
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className="px-3 py-2 font-medium text-slate-700">
+              <th key={column.key} className="px-3 py-2 font-medium text-df-text">
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-100 bg-df-bg">
           {rows.map((row) => (
             <tr key={rowKey(row)}>
               {columns.map((column) => (
-                <td key={column.key} className="px-3 py-2 text-slate-800">
+                <td key={column.key} className="px-3 py-2 text-df-text">
                   {column.render(row)}
                 </td>
               ))}

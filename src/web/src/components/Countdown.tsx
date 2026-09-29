@@ -22,7 +22,7 @@ export function Countdown({ to, label }: { to: string; label?: string }) {
   }, []);
 
   return (
-    <p className="text-sm text-slate-700">
+    <p className="text-sm text-df-text">
       {label ? <span className="font-medium">{label}: </span> : null}
       <span>{formatRemaining(target - now)}</span>
     </p>

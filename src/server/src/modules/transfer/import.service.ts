@@ -5,7 +5,7 @@ import { importEventSchema, type ImportEventInput } from "@dogfood/shared";
 import { audit } from "../../lib/audit.js";
 import { assertApiKeyEventScope } from "../../lib/api-key-scope.js";
 import { clock } from "../../lib/clock.js";
-import { badRequest, notFound, unauthorized } from "../../lib/http-error.js";
+import { badRequest, forbidden, notFound, unauthorized } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { generateToken, hashToken } from "../../lib/tokens.js";
 import { parseCsv } from "../../lib/csv.js";
@@ -17,6 +17,7 @@ async function generateUnusablePasswordHash(): Promise<string> {
 
 export async function importData(req: Request, rawBody: unknown, dryRun: boolean) {
   if (!req.user) throw unauthorized();
+  if (req.apiKey) throw forbidden("access.denied", "API keys are not allowed to perform imports");
 
   const parseResult = importEventSchema.safeParse(rawBody);
   if (!parseResult.success) {
@@ -27,8 +28,8 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
 
   // 1. Resolve or identify event
   const targetEventId = data.event.id ?? `evt_imp_${Date.now()}`;
-  const existingEvent = await prisma.event.findFirst({
-    where: { OR: [{ id: targetEventId }, { name: data.event.name }] },
+  const existingEvent = await prisma.event.findUnique({
+    where: { id: targetEventId },
   });
 
   const eventToCreate = !existingEvent;
@@ -36,6 +37,18 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
 
   // Event-scoped API keys may only import into their own event.
   assertApiKeyEventScope(req, eventId);
+
+  if (!eventToCreate) {
+    if (req.user.platformRole !== "ADMIN") {
+      const isOrganizer = await prisma.eventRole.findUnique({
+        where: { userId_eventId_role: { userId: req.user.id, eventId, role: "ORGANIZER" } },
+      });
+      if (!isOrganizer) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw forbidden("access.denied", "Must be organizer of the existing event");
+      }
+    }
+  }
 
   // 2. Identify users to create vs skip
   const allEmails = new Set<string>();
@@ -113,6 +126,111 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
     scoresSkipped: existingScores,
   };
 
+  // Pre-validate projects and scores
+  const computedSubmissionsClose = existingEvent
+    ? existingEvent.submissionsClose
+    : data.event.submissionsClose
+      ? new Date(data.event.submissionsClose)
+      : data.event.submissions_close
+        ? new Date(data.event.submissions_close)
+        : null;
+
+  if (computedSubmissionsClose) {
+    for (let i = 0; i < data.projects.length; i++) {
+      const pData = data.projects[i]!;
+      const subAt = pData.submittedAt
+        ? new Date(pData.submittedAt)
+        : pData.submitted_at
+          ? new Date(pData.submitted_at)
+          : clock.now();
+      
+      if (subAt > computedSubmissionsClose) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_project", [{ path: `projects.${i}.submittedAt`, message: "Project submittedAt cannot be after event submissionsClose" }]);
+      }
+    }
+  }
+
+  const existingCriteria = existingEvent
+    ? await prisma.criterion.findMany({ where: { eventId } })
+    : [];
+  const criteriaMapByKey = new Map<string, { minScore: number; maxScore: number }>();
+  for (const c of existingCriteria) criteriaMapByKey.set(c.key, { minScore: c.minScore, maxScore: c.maxScore });
+  for (const c of data.criteria) criteriaMapByKey.set(c.key, { minScore: c.minScore ?? 1, maxScore: c.maxScore ?? 5 });
+
+  const projectMembers = new Map<string, Set<string>>();
+  if (existingEvent) {
+    const existingProjectsData = await prisma.project.findMany({
+      where: { eventId },
+      include: { team: { include: { members: { include: { user: true } } } } },
+    });
+    for (const p of existingProjectsData) {
+      const mems = new Set(p.team?.members.map((m) => m.user.email.toLowerCase()) || []);
+      projectMembers.set(p.id, mems);
+      projectMembers.set(p.title.toLowerCase(), mems);
+    }
+  }
+
+  const importTeamMembers = new Map<string, Set<string>>();
+  for (const t of data.teams) {
+    const mems = new Set(t.members.map((m) => m.toLowerCase()));
+    if (t.id) importTeamMembers.set(t.id, mems);
+    importTeamMembers.set(t.name.toLowerCase(), mems);
+  }
+
+  for (const p of data.projects) {
+    const teamRef = p.teamId ?? p.team ?? "";
+    let mems = importTeamMembers.get(teamRef) ?? importTeamMembers.get(teamRef.toLowerCase()) ?? new Set<string>();
+    if (mems.size === 0 && existingEvent) {
+       const existingTeam = await prisma.team.findFirst({
+         where: { OR: [{ id: teamRef }, { name: teamRef }], eventId },
+         include: { members: { include: { user: true } } }
+       });
+       if (existingTeam) mems = new Set(existingTeam.members.map((m) => m.user.email.toLowerCase()));
+    }
+    if (p.id) projectMembers.set(p.id, mems);
+    projectMembers.set(p.title.toLowerCase(), mems);
+  }
+
+  for (let i = 0; i < data.scores.length; i++) {
+    const sData = data.scores[i]!;
+    const criteriaEntries = sData.criteria
+      ? Object.entries(sData.criteria)
+      : (sData.scores ?? []).map((sc) => [sc.criterionKey, sc.value] as const);
+
+    for (const [cKey, val] of criteriaEntries) {
+      const cSpec = criteriaMapByKey.get(cKey);
+      if (!cSpec) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: "Unknown criterion" }]);
+      }
+      if (!Number.isInteger(val) || (val as number) < cSpec.minScore || (val as number) > cSpec.maxScore) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.invalid_score", [{ path: `scores.${i}.criteria.${cKey}`, message: `Score must be an integer between ${cSpec.minScore} and ${cSpec.maxScore}` }]);
+      }
+    }
+
+    const judgeRef = sData.judgeId ?? sData.judge ?? "";
+    let judgeEmail = judgeRef.includes("@") ? judgeRef.toLowerCase() : null;
+    if (!judgeEmail && existingEvent) {
+      const user = await prisma.user.findUnique({ where: { id: judgeRef }, select: { email: true } });
+      if (user) judgeEmail = user.email.toLowerCase();
+    }
+    if (!judgeEmail) {
+      const judgeInImport = data.judges.find((j) => j.id === judgeRef || j.name === judgeRef);
+      if (judgeInImport) judgeEmail = judgeInImport.email.toLowerCase();
+    }
+    
+    if (judgeEmail) {
+      const projectRef = sData.projectId ?? sData.project ?? "";
+      const mems = projectMembers.get(projectRef) ?? projectMembers.get(projectRef.toLowerCase());
+      if (mems && mems.has(judgeEmail.toLowerCase())) {
+        await audit(req, "import.refused", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
+        throw badRequest("import.conflict", [{ path: `scores.${i}`, message: "Judge cannot score their own team" }]);
+      }
+    }
+  }
+
   if (dryRun) {
     return {
       dryRun: true,
@@ -156,21 +274,23 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
       }
 
       // Add importing user as ORGANIZER
-      await tx.eventRole.upsert({
-        where: {
-          userId_eventId_role: {
+      if (eventToCreate) {
+        await tx.eventRole.upsert({
+          where: {
+            userId_eventId_role: {
+              userId: req.user!.id,
+              eventId,
+              role: "ORGANIZER",
+            },
+          },
+          create: {
             userId: req.user!.id,
             eventId,
             role: "ORGANIZER",
           },
-        },
-        create: {
-          userId: req.user!.id,
-          eventId,
-          role: "ORGANIZER",
-        },
-        update: {},
-      });
+          update: {},
+        });
+      }
 
       // B. Create Users
       const userMapByEmail = new Map<string, string>();
@@ -588,7 +708,7 @@ export async function importData(req: Request, rawBody: unknown, dryRun: boolean
     }
   }, { timeout: 30000 });
 
-  await audit(req, "import.json", { type: "event", id: eventId, eventId });
+  await audit(req, "import.json", { type: "event", id: eventId, eventId: existingEvent ? eventId : undefined });
 
   return {
     dryRun: false,
@@ -605,6 +725,7 @@ export async function importJudgesCsv(
   dryRun: boolean,
 ) {
   if (!req.user) throw unauthorized();
+  if (req.apiKey) throw forbidden("access.denied", "API keys are not allowed to perform imports");
 
   const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
   if (!event) throw notFound("Event not found");

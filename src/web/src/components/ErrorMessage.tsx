@@ -7,5 +7,5 @@ export function ErrorMessage({ error }: { error: unknown }) {
       : error instanceof Error
         ? error.message
         : "Something went wrong";
-  return <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{message}</p>;
+  return <p className="rounded border border-red-200 bg-df-panel px-3 py-2 text-sm text-red-700">{message}</p>;
 }

@@ -72,7 +72,6 @@ export async function exportEventJson(req: Request, eventId: string) {
   const teamsList = event.teams.map((t) => ({
     id: t.id,
     name: t.name,
-    inviteCode: t.inviteCode,
     members: t.members.map((m) => m.user.email),
   }));
 
@@ -119,7 +118,10 @@ export async function exportEventJson(req: Request, eventId: string) {
   // Map votes pseudonymizing voter IDs
   const voterIdMap = new Map<string, string>();
   let voterCounter = 1;
-  const votesList = event.votes.map((v) => {
+  const now = clock.now();
+  const isVotingClosed = event.votingClose && now >= event.votingClose;
+
+  const votesList = isVotingClosed ? event.votes.filter(v => !v.voidedAt).map((v) => {
     let psId = voterIdMap.get(v.voterId);
     if (!psId) {
       psId = `voter_${String(voterCounter++).padStart(2, "0")}`;
@@ -133,7 +135,7 @@ export async function exportEventJson(req: Request, eventId: string) {
       createdAt: v.createdAt.toISOString(),
       flagged: v.flagged,
     };
-  });
+  }) : [];
 
   // Map comments
   const commentsList = event.comments.map((c) => ({

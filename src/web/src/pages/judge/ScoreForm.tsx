@@ -30,7 +30,7 @@ function ScoreFormContent() {
     setScores(next);
   }, [assignmentQuery.data]);
 
-  if (assignmentQuery.isLoading) return <p className="text-slate-600">Loading assignment…</p>;
+  if (assignmentQuery.isLoading) return <p className="text-df-dim">Loading assignment…</p>;
   if (assignmentQuery.isError) return <ErrorMessage error={assignmentQuery.error} />;
   const assignment = assignmentQuery.data?.assignment;
   if (!assignment) return null;
@@ -57,10 +57,10 @@ function ScoreFormContent() {
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <div>
-        <Link to="/judge" className="text-sm text-indigo-600 hover:underline">
-          Back to judging
+        <Link to="/judge" className="text-sm text-df-pink hover:text-df-cyan transition-colors font-mono">
+          ← Back to judging
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">{assignment.project.title}</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-df-text">{assignment.project.title}</h1>
         <div className="mt-2">
           <Badge tone={assignment.status === "SUBMITTED" ? "green" : "amber"}>
             {assignment.status}
@@ -69,14 +69,14 @@ function ScoreFormContent() {
       </div>
 
       <Card title="Project">
-        <p className="whitespace-pre-wrap text-sm text-slate-700">{assignment.project.summary}</p>
+        <p className="whitespace-pre-wrap text-sm text-df-text">{assignment.project.summary}</p>
         <div className="mt-3 space-y-1 text-sm">
           {isSafeUrl(assignment.project.repoUrl) ? (
             <p>
               Repo:{" "}
               <a
                 href={assignment.project.repoUrl}
-                className="text-indigo-600 hover:underline"
+                className="text-df-pink hover:text-df-cyan transition-colors font-mono"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -89,7 +89,7 @@ function ScoreFormContent() {
               Demo:{" "}
               <a
                 href={assignment.project.demoUrl}
-                className="text-indigo-600 hover:underline"
+                className="text-df-pink hover:text-df-cyan transition-colors font-mono"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -120,7 +120,7 @@ function ScoreFormContent() {
               }
             />
             {criterion.description ? (
-              <p className="text-xs text-slate-500">{criterion.description}</p>
+              <p className="text-xs text-df-dim">{criterion.description}</p>
             ) : null}
           </div>
         ))}
@@ -132,7 +132,7 @@ function ScoreFormContent() {
         />
 
         {updateScores.isError ? <ErrorMessage error={updateScores.error} /> : null}
-        {message ? <p className="text-sm text-green-700">{message}</p> : null}
+        {message ? <p className="text-sm text-df-cyan">{message}</p> : null}
 
         <div className="flex flex-wrap gap-2">
           <Button type="submit" variant="secondary" disabled={updateScores.isPending}>
